@@ -29,6 +29,24 @@ export const productImages = pgTable('product_images', {
   position: integer('position').notNull().default(0),
 })
 
+export const productVariantGroups = pgTable('product_variant_groups', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  productId: uuid('product_id')
+    .references(() => products.id, { onDelete: 'cascade' })
+    .notNull(),
+  name: text('name').notNull(),
+  position: integer('position').notNull().default(0),
+})
+
+export const productVariantOptions = pgTable('product_variant_options', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  groupId: uuid('group_id')
+    .references(() => productVariantGroups.id, { onDelete: 'cascade' })
+    .notNull(),
+  value: text('value').notNull(),
+  position: integer('position').notNull().default(0),
+})
+
 export const chatSessions = pgTable('chat_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   guestName: text('guest_name').notNull(),

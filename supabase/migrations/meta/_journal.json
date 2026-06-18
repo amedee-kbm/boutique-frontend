@@ -15,6 +15,13 @@
       "when": 1781792810360,
       "tag": "0001_green_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781800173673,
+      "tag": "0002_tired_captain_universe",
+      "breakpoints": true
     }
   ]
 }

@@ -130,6 +130,68 @@ create policy "product_images: admin write"
   with check ((select public.is_admin()));
 
 -- ============================================================
+-- product_variant_groups / product_variant_options
+-- Read: anon & guests see variants for visible products only;
+--       admin sees all. Write: admin only.
+-- ============================================================
+create index if not exists product_variant_groups_product_id_idx
+  on public.product_variant_groups (product_id);
+
+create index if not exists product_variant_options_group_id_idx
+  on public.product_variant_options (group_id);
+
+alter table public.product_variant_groups  enable row level security;
+alter table public.product_variant_options enable row level security;
+
+drop policy if exists "variant_groups: read"        on public.product_variant_groups;
+drop policy if exists "variant_groups: admin write" on public.product_variant_groups;
+
+create policy "variant_groups: read"
+  on public.product_variant_groups
+  for select
+  to anon, authenticated
+  using (
+    (select public.is_admin())
+    or exists (
+      select 1 from public.products
+      where products.id = product_variant_groups.product_id
+        and products.visible = true
+    )
+  );
+
+create policy "variant_groups: admin write"
+  on public.product_variant_groups
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+drop policy if exists "variant_options: read"        on public.product_variant_options;
+drop policy if exists "variant_options: admin write" on public.product_variant_options;
+
+create policy "variant_options: read"
+  on public.product_variant_options
+  for select
+  to anon, authenticated
+  using (
+    (select public.is_admin())
+    or exists (
+      select 1
+      from public.product_variant_groups g
+      join public.products p on p.id = g.product_id
+      where g.id = product_variant_options.group_id
+        and p.visible = true
+    )
+  );
+
+create policy "variant_options: admin write"
+  on public.product_variant_options
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+-- ============================================================
 -- chat_sessions
 -- Guests own their session (created_by = their uid)
 -- Admin can read and update all sessions
