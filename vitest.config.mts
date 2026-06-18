@@ -13,5 +13,8 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ['./vitest.setup.ts'],
     exclude: ['**/node_modules/**', '**/e2e/**'],
     env: loadEnv(mode, process.cwd(), ''),
+    // DB-backed integration tests (RLS) talk to a remote Supabase instance
+    testTimeout: 20000,
+    hookTimeout: 30000,
   },
 }))

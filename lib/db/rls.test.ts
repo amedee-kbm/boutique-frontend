@@ -57,7 +57,7 @@ async function as<T>(role: Role, fn: (tx: postgres.TransactionSql) => Promise<T>
     await tx.unsafe(`SET LOCAL ROLE ${pgRole}`)
     await tx`SELECT set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`
     return fn(tx)
-  })
+  }) as Promise<T>
 }
 
 // ── Setup / teardown ──────────────────────────────────────────────────────────
