@@ -134,6 +134,20 @@ Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells af
 - E2E tests live in `e2e/` at project root
 - Do not mock Supabase in e2e tests — use a dedicated test Supabase project or local Supabase CLI
 
+### What mocked tests cannot prove (learned the hard way)
+
+Vitest imports modules directly and never applies the framework's runtime contracts. A green unit suite is **not** evidence the app boots or that a mutation reaches the database. Treat these as blind spots that **only** an e2e run (or a real `next build`/`next dev`) can cover:
+
+- **Framework boundary contracts.** Vitest does not enforce `"use server"` rules, RSC serialization, `"use client"` boundaries, or `await`-ing async request APIs (`cookies()`, `params`, …). Example that shipped green but crashed in the browser: a `"use server"` file may export **only async functions** — exporting a `const schema = z.object(...)` from it throws `A "use server" file can only export async functions, found object` at runtime, breaking every action in that module. Mocks sailed past it; e2e caught it.
+- **Real wiring.** Auth cookie round-trips, `proxy.ts` redirects, `revalidatePath`/`updateTag`, DB constraints, RLS, and storage only execute against the real stack. A test that mocks `@/lib/db` or a server action proves the caller's logic, not that the action works.
+- **Rule of thumb:** if a test mocks the thing that would actually fail, it cannot catch that failure. For every mutation, ensure **one** e2e path exercises it unmocked. When an e2e fails, reproduce against the real runtime before trusting unit-level results — don't "fix" by adjusting mocks.
+
+### Conventions that keep the boundaries testable
+
+- **Keep `"use server"` files pure actions.** Zod schemas, types, and helpers shared with client/tests live in a sibling `*.schema.ts` (e.g. `products.schema.ts`); the action file imports them. Never `export` a non-function value from a `"use server"` module.
+- **Diagnosing real-runtime errors:** server-action/RSC stack traces are written to `.next/dev/logs/next-development.log` (the browser only shows a generic "server error" digest). Only one `next dev` can run per project dir — reuse the running one and tail that log.
+- **Environment caveats when running e2e here:** Next dev compiles routes on first hit, so the first navigation to a route can exceed a 5s assertion timeout — warm it or raise the timeout rather than assuming a bug. Also, a sandboxed test browser may have no external network even when Node does; "Failed to fetch" against Supabase can be the environment, not the code — verify with a Node-side request.
+
 ---
 
 ## Git Conventions
