@@ -67,6 +67,9 @@ function SortableThumb({ image, onRemove }: { image: StagedImage; onRemove: () =
 
 export function MediaZone({ onChange }: { onChange?: (files: File[]) => void }) {
   const [images, setImages] = useState<StagedImage[]>([])
+  // Mirrors `images` so the unmount cleanup can revoke the current object URLs
+  // without a stale closure. Every mutation must go through `commit`, never
+  // `setImages` directly, or the ref desyncs and URLs leak.
   const imagesRef = useRef<StagedImage[]>([])
 
   function commit(next: StagedImage[]) {

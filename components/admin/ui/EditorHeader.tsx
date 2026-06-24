@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 interface EditorHeaderProps {
   title?: ReactNode
@@ -38,7 +37,7 @@ export function EditorHeader({
         </Button>
       </div>
 
-      <div className={cn('justify-self-center text-sm font-medium', !center && 'text-foreground')}>
+      <div className="text-foreground justify-self-center text-sm font-medium">
         {center ?? title}
       </div>
 
