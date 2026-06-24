@@ -9,13 +9,12 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('@/lib/actions/products', () => ({
-  createProduct: vi.fn(),
   updateProduct: vi.fn(),
 }))
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
-import { createProduct, updateProduct } from '@/lib/actions/products'
+import { updateProduct } from '@/lib/actions/products'
 import { toast } from 'sonner'
 import { ProductForm } from '@/components/admin/ProductForm'
 
@@ -36,48 +35,6 @@ const product = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-})
-
-describe('ProductForm (create)', () => {
-  it('renders the create button and lists categories', () => {
-    render(<ProductForm categories={categories} />)
-    expect(screen.getByRole('button', { name: /create product/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Dresses' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Uncategorized' })).toBeInTheDocument()
-  })
-
-  it('submits the entered values and redirects to the new edit page', async () => {
-    vi.mocked(createProduct).mockResolvedValue({ error: null, id: 'new-id' })
-    const user = userEvent.setup()
-    render(<ProductForm categories={categories} />)
-
-    await user.type(screen.getByLabelText('Name'), 'New Product')
-    await user.type(screen.getByLabelText('Price'), '12.50')
-    await user.type(screen.getByLabelText('Slug'), 'new-product')
-    await user.click(screen.getByRole('button', { name: /create product/i }))
-
-    await waitFor(() => expect(createProduct).toHaveBeenCalledTimes(1))
-    const formData = vi.mocked(createProduct).mock.calls[0][0] as FormData
-    expect(formData.get('name')).toBe('New Product')
-    expect(formData.get('price')).toBe('12.50')
-    expect(formData.get('visible')).toBe('true')
-
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/admin/products/new-id/edit'))
-  })
-
-  it('shows a toast and does not redirect when creation fails', async () => {
-    vi.mocked(createProduct).mockResolvedValue({ error: 'Slug taken', id: null })
-    const user = userEvent.setup()
-    render(<ProductForm categories={categories} />)
-
-    await user.type(screen.getByLabelText('Name'), 'X')
-    await user.type(screen.getByLabelText('Price'), '1.00')
-    await user.type(screen.getByLabelText('Slug'), 'x')
-    await user.click(screen.getByRole('button', { name: /create product/i }))
-
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Slug taken'))
-    expect(push).not.toHaveBeenCalled()
-  })
 })
 
 describe('ProductForm (edit)', () => {

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-import { createProduct, updateProduct } from '@/lib/actions/products'
+import { updateProduct } from '@/lib/actions/products'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,7 +19,7 @@ interface Category {
 
 interface ProductFormProps {
   categories: Category[]
-  product?: {
+  product: {
     id: string
     name: string
     slug: string
@@ -33,30 +33,19 @@ interface ProductFormProps {
 export function ProductForm({ categories, product }: ProductFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [visible, setVisible] = useState(product?.visible ?? true)
-  const isEditing = Boolean(product)
+  const [visible, setVisible] = useState(product.visible)
 
   function onSubmit(formData: FormData) {
     formData.set('visible', String(visible))
 
     startTransition(async () => {
-      if (isEditing) {
-        const result = await updateProduct(product!.id, formData)
-        if (result.error) {
-          toast.error(result.error)
-          return
-        }
-        toast.success('Product saved')
-        router.refresh()
-      } else {
-        const result = await createProduct(formData)
-        if (result.error || !result.id) {
-          toast.error(result.error ?? 'Could not create product')
-          return
-        }
-        toast.success('Product created — now add some photos')
-        router.push(`/admin/products/${result.id}/edit`)
+      const result = await updateProduct(product.id, formData)
+      if (result.error) {
+        toast.error(result.error)
+        return
       }
+      toast.success('Product saved')
+      router.refresh()
     })
   }
 
@@ -69,7 +58,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
             <Input
               id="name"
               name="name"
-              defaultValue={product?.name}
+              defaultValue={product.name}
               placeholder="e.g. Floral Summer Dress"
               required
             />
@@ -87,7 +76,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
                   name="price"
                   type="text"
                   inputMode="decimal"
-                  defaultValue={product?.price}
+                  defaultValue={product.price}
                   placeholder="29.99"
                   className="pl-6"
                   required
@@ -100,7 +89,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               <select
                 id="categoryId"
                 name="categoryId"
-                defaultValue={product?.categoryId ?? ''}
+                defaultValue={product.categoryId ?? ''}
                 className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-8 w-full rounded-lg border bg-transparent px-2.5 text-sm outline-none focus-visible:ring-3"
               >
                 <option value="">Uncategorized</option>
@@ -118,9 +107,9 @@ export function ProductForm({ categories, product }: ProductFormProps) {
             <Input
               id="slug"
               name="slug"
-              defaultValue={product?.slug}
+              defaultValue={product.slug}
               placeholder="auto-generated from name if left blank"
-              required={isEditing}
+              required
             />
             <p className="text-muted-foreground text-xs">
               Appears in the store link for this product.
@@ -132,7 +121,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
             <Textarea
               id="description"
               name="description"
-              defaultValue={product?.description ?? ''}
+              defaultValue={product.description ?? ''}
               placeholder="Describe the fabric, fit, sizes available…"
               rows={5}
             />
@@ -153,7 +142,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving…' : isEditing ? 'Save changes' : 'Create product'}
+              {isPending ? 'Saving…' : 'Save changes'}
             </Button>
           </div>
         </form>
