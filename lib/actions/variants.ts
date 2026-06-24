@@ -31,7 +31,11 @@ export async function addVariantGroup(productId: string, name: string) {
 }
 
 export async function deleteVariantGroup(id: string, productId: string) {
-  await db.delete(productVariantGroups).where(eq(productVariantGroups.id, id))
+  try {
+    await db.delete(productVariantGroups).where(eq(productVariantGroups.id, id))
+  } catch {
+    return { error: 'Could not delete group' }
+  }
   revalidatePath(`/admin/products/${productId}/edit`)
   return { error: null }
 }
@@ -56,7 +60,11 @@ export async function addVariantOption(groupId: string, productId: string, value
 }
 
 export async function deleteVariantOption(id: string, productId: string) {
-  await db.delete(productVariantOptions).where(eq(productVariantOptions.id, id))
+  try {
+    await db.delete(productVariantOptions).where(eq(productVariantOptions.id, id))
+  } catch {
+    return { error: 'Could not delete option' }
+  }
   revalidatePath(`/admin/products/${productId}/edit`)
   return { error: null }
 }

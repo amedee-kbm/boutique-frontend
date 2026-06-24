@@ -56,7 +56,7 @@ describe('VariantManager', () => {
   it('adds a new group and shows it after the action succeeds', async () => {
     vi.mocked(addVariantGroup).mockResolvedValue({
       error: null,
-      group: { id: 'g2', name: 'Color', options: [] },
+      group: { id: 'g2', productId: 'p1', name: 'Color', position: 1, options: [] },
     })
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={[]} />)
