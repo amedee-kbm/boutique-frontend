@@ -20,6 +20,7 @@ interface Product {
   visible: boolean
   categoryName: string | null
   thumbnail: string | null
+  variantCount: number
 }
 
 type Filter = 'all' | 'visible' | 'hidden'
@@ -96,7 +97,14 @@ export function ProductsList({ products }: { products: Product[] }) {
               href={`/admin/products/${product.id}/edit`}
               thumbnail={product.thumbnail}
               title={product.name}
-              meta={`${formatPrice(product.price)} · ${product.categoryName ?? 'Uncategorized'}`}
+              meta={[
+                formatPrice(product.price),
+                product.categoryName ?? 'Uncategorized',
+                product.variantCount > 0 &&
+                  `${product.variantCount} variant${product.variantCount === 1 ? '' : 's'}`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
               accent={product.visible ? undefined : 'Hidden'}
               actions={
                 <>

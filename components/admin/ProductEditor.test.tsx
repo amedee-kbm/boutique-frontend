@@ -64,7 +64,7 @@ beforeEach(() => {
 describe('ProductEditor (create)', () => {
   it('renders the Shopify-style editor scaffold', () => {
     render(<ProductEditor categories={categories} />)
-    expect(screen.getByText('New product')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /visible/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
     expect(screen.getByText('Add images')).toBeInTheDocument()
     expect(screen.getByLabelText('Product title')).toBeInTheDocument()

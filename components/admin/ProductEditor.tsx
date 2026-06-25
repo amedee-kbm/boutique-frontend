@@ -16,9 +16,17 @@ import { SubScreen } from '@/components/admin/ui/SubScreen'
 import { SectionCard } from '@/components/admin/ui/SectionCard'
 import { FloatingLabelInput } from '@/components/admin/ui/FloatingLabelInput'
 import { MediaZone } from '@/components/admin/ui/MediaZone'
+import { ChevronDown } from 'lucide-react'
+
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface Category {
   id: string
@@ -47,6 +55,36 @@ interface Product {
   visible: boolean
   images: ProductImage[]
   variantGroups: VariantGroup[]
+}
+
+function StatusSelector({
+  visible,
+  onChange,
+}: {
+  visible: boolean
+  onChange: (visible: boolean) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button type="button" variant="ghost" size="sm" className="gap-1 font-medium">
+            {visible ? 'Visible' : 'Hidden'}
+            <ChevronDown className="size-4" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="center">
+        <DropdownMenuRadioGroup
+          value={visible ? 'visible' : 'hidden'}
+          onValueChange={(value) => onChange(value === 'visible')}
+        >
+          <DropdownMenuRadioItem value="visible">Visible in store</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="hidden">Hidden from store</DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
 
 export function ProductEditor({
@@ -151,7 +189,7 @@ export function ProductEditor({
   return (
     <div className="space-y-5">
       <EditorHeader
-        title={product ? product.name : 'New product'}
+        center={<StatusSelector visible={visible} onChange={setVisible} />}
         saveType="button"
         saving={isPending}
         onSave={handleSave}
@@ -211,18 +249,6 @@ export function ProductEditor({
           </div>
         </SectionCard>
       </div>
-
-      <SectionCard label="Availability">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Visible in store</p>
-            <p className="text-muted-foreground text-xs">
-              Turn off to hide this product from customers.
-            </p>
-          </div>
-          <Switch checked={visible} onCheckedChange={setVisible} aria-label="Visible in store" />
-        </div>
-      </SectionCard>
 
       <SubScreen open={descOpen} onOpenChange={setDescOpen} title="Description">
         <textarea

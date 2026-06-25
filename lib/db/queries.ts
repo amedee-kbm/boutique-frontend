@@ -79,6 +79,11 @@ export async function getAllProducts() {
         ORDER BY position ASC
         LIMIT 1
       )`.as('thumbnail'),
+      variantCount: sql<number>`(
+        SELECT COUNT(*)::int FROM product_variant_options o
+        JOIN product_variant_groups g ON g.id = o.group_id
+        WHERE g.product_id = ${products.id}
+      )`.as('variant_count'),
     })
     .from(products)
     .leftJoin(categories, eq(products.categoryId, categories.id))
