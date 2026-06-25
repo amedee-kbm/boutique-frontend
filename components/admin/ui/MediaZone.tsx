@@ -95,7 +95,9 @@ export function MediaZone({ onChange }: { onChange?: (files: File[]) => void }) 
         file,
         url: URL.createObjectURL(file),
       }))
-      commit([...images, ...added])
+      // Read the ref, not the render-closure `images`, so two rapid drops
+      // before a re-render don't drop the first batch.
+      commit([...imagesRef.current, ...added])
     },
   })
 
