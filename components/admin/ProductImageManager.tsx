@@ -3,18 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core'
-import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, ImagePlus, Loader2, X } from 'lucide-react'
+import { ImagePlus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -24,79 +13,13 @@ import {
   uploadProductImage,
 } from '@/lib/actions/products'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SortableImageGrid } from '@/components/admin/ui/SortableImageGrid'
 
 interface ProductImage {
   id: string
   url: string
   alt: string | null
-}
-
-function SortableImage({
-  image,
-  onDelete,
-  onAltSave,
-}: {
-  image: ProductImage
-  onDelete: () => void
-  onAltSave: (alt: string) => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: image.id,
-  })
-  const isTemp = image.id.startsWith('temp-')
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('space-y-1', isDragging && 'z-10 opacity-80')}
-    >
-      <div
-        className={cn(
-          'group bg-muted relative aspect-square overflow-hidden rounded-lg border',
-          isDragging && 'ring-ring ring-2'
-        )}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image.url} alt={image.alt ?? ''} className="size-full object-cover" />
-
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label="Drag to reorder"
-          className="bg-background/80 text-foreground absolute top-1 left-1 flex size-7 touch-none items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <GripVertical className="size-4" />
-        </button>
-
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon-sm"
-          onClick={onDelete}
-          aria-label="Remove image"
-          className="absolute top-1 right-1 opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <X className="size-4" />
-        </Button>
-      </div>
-
-      <Input
-        defaultValue={image.alt ?? ''}
-        disabled={isTemp}
-        placeholder="Alt text (optional)"
-        aria-label="Image alt text"
-        className="h-7 text-xs"
-        onBlur={(e) => {
-          if (isTemp) return
-          if (e.target.value.trim() !== (image.alt ?? '')) onAltSave(e.target.value)
-        }}
-      />
-    </div>
-  )
 }
 
 export function ProductImageManager({
@@ -111,11 +34,6 @@ export function ProductImageManager({
   // router.refresh() so temp ids are replaced with real ones.
   const [images, setImages] = useState(initialImages)
   const [isUploading, startUpload] = useTransition()
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } })
-  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'image/*': [] },
@@ -161,13 +79,7 @@ export function ProductImageManager({
     })
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const oldIndex = images.findIndex((img) => img.id === active.id)
-    const newIndex = images.findIndex((img) => img.id === over.id)
-    const reordered = arrayMove(images, oldIndex, newIndex)
+  function handleReorder(reordered: ProductImage[]) {
     setImages(reordered)
 
     const persistableIds = reordered
@@ -202,20 +114,28 @@ export function ProductImageManager({
       </div>
 
       {images.length > 0 && (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={images.map((img) => img.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              {images.map((image) => (
-                <SortableImage
-                  key={image.id}
-                  image={image}
-                  onDelete={() => handleDelete(image.id)}
-                  onAltSave={(alt) => handleAltSave(image.id, alt)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <SortableImageGrid
+          images={images}
+          onReorder={handleReorder}
+          onRemove={handleDelete}
+          renderFooter={(image) => {
+            const isTemp = image.id.startsWith('temp-')
+            return (
+              <Input
+                defaultValue={image.alt ?? ''}
+                disabled={isTemp}
+                placeholder="Alt text (optional)"
+                aria-label="Image alt text"
+                className="h-7 text-xs"
+                onBlur={(e) => {
+                  if (isTemp) return
+                  if (e.target.value.trim() !== (image.alt ?? ''))
+                    handleAltSave(image.id, e.target.value)
+                }}
+              />
+            )
+          }}
+        />
       )}
 
       {images.length > 0 && (
