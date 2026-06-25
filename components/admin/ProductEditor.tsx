@@ -120,10 +120,14 @@ export function ProductEditor({
         return
       }
 
-      for (const file of files) {
-        const imageData = new FormData()
-        imageData.set('file', file)
-        const upload = await uploadProductImage(result.id, imageData)
+      const uploads = await Promise.all(
+        files.map((file, index) => {
+          const imageData = new FormData()
+          imageData.set('file', file)
+          return uploadProductImage(result.id, imageData, index)
+        })
+      )
+      for (const upload of uploads) {
         if (upload.error) toast.error(upload.error)
       }
 

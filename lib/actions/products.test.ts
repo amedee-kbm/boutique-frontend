@@ -259,6 +259,20 @@ describe('uploadProductImage', () => {
     )
   })
 
+  it('uses a caller-supplied position without querying existing images', async () => {
+    const { client } = storageClient()
+    mockedCreateAdminClient.mockReturnValue(client as never)
+    const insertChain = chain()
+    mockedDb.insert.mockReturnValue(insertChain)
+
+    const fd = new FormData()
+    fd.set('file', new File(['d'], 'a.jpg', { type: 'image/jpeg' }))
+    await uploadProductImage('p1', fd, 3)
+
+    expect(mockedDb.select).not.toHaveBeenCalled()
+    expect(insertChain.values).toHaveBeenCalledWith(expect.objectContaining({ position: 3 }))
+  })
+
   it('starts at position 0 when there are no existing images', async () => {
     const { client } = storageClient()
     mockedCreateAdminClient.mockReturnValue(client as never)

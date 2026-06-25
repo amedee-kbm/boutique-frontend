@@ -100,12 +100,15 @@ export async function deleteProduct(id: string) {
   revalidatePath('/admin/products')
 }
 
-export async function uploadProductImage(productId: string, formData: FormData) {
+export async function uploadProductImage(productId: string, formData: FormData, position?: number) {
   const file = formData.get('file') as File | null
   if (!file) return { error: 'No file provided', url: null }
 
   const ext = file.name.split('.').pop()
-  const path = `${productId}/${Date.now()}.${ext}`
+  // Include the caller-supplied position in the key so a parallel batch landing
+  // in the same millisecond can't collide on the storage path.
+  const suffix = position === undefined ? '' : `-${position}`
+  const path = `${productId}/${Date.now()}${suffix}.${ext}`
 
   const supabase = createAdminClient()
   const { error: uploadError } = await supabase.storage
@@ -118,19 +121,23 @@ export async function uploadProductImage(productId: string, formData: FormData) 
     data: { publicUrl },
   } = supabase.storage.from('product-images').getPublicUrl(path)
 
-  // Determine next position
-  const existing = await db
-    .select({ position: productImages.position })
-    .from(productImages)
-    .where(eq(productImages.productId, productId))
-    .orderBy(asc(productImages.position))
+  // Trust the caller's position when given (the create flow knows the order of
+  // its staged files); otherwise look up the next slot after existing images.
+  let resolvedPosition = position
+  if (resolvedPosition === undefined) {
+    const existing = await db
+      .select({ position: productImages.position })
+      .from(productImages)
+      .where(eq(productImages.productId, productId))
+      .orderBy(asc(productImages.position))
 
-  const nextPosition = existing.length > 0 ? (existing[existing.length - 1]?.position ?? -1) + 1 : 0
+    resolvedPosition = existing.length > 0 ? (existing[existing.length - 1]?.position ?? -1) + 1 : 0
+  }
 
   await db.insert(productImages).values({
     productId,
     url: publicUrl,
-    position: nextPosition,
+    position: resolvedPosition,
   })
 
   revalidatePath(`/admin/products/${productId}/edit`)
