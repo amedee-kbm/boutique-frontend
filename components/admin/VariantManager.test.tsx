@@ -7,6 +7,7 @@ vi.mock('@/lib/actions/variants', () => ({
   addVariantOption: vi.fn(),
   deleteVariantGroup: vi.fn(),
   deleteVariantOption: vi.fn(),
+  setVariantOptionImage: vi.fn(),
 }))
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
@@ -25,8 +26,8 @@ const groups = [
     id: 'g1',
     name: 'Size',
     options: [
-      { id: 'o1', value: 'S' },
-      { id: 'o2', value: 'M' },
+      { id: 'o1', value: 'S', imageId: null },
+      { id: 'o2', value: 'M', imageId: null },
     ],
   },
 ]
@@ -37,19 +38,19 @@ beforeEach(() => {
 
 describe('VariantManager', () => {
   it('prompts to add a group when there are none', () => {
-    render(<VariantManager productId="p1" initialGroups={[]} />)
+    render(<VariantManager productId="p1" initialGroups={[]} images={[]} />)
     expect(screen.getByText(/no variants yet/i)).toBeInTheDocument()
   })
 
   it('renders existing groups and their options', () => {
-    render(<VariantManager productId="p1" initialGroups={groups} />)
+    render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
     expect(screen.getByText('Size')).toBeInTheDocument()
     expect(screen.getByText('S')).toBeInTheDocument()
     expect(screen.getByText('M')).toBeInTheDocument()
   })
 
   it('exposes a delete control for each group', () => {
-    render(<VariantManager productId="p1" initialGroups={groups} />)
+    render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
     expect(screen.getByRole('button', { name: /delete size group/i })).toBeInTheDocument()
   })
 
@@ -59,7 +60,7 @@ describe('VariantManager', () => {
       group: { id: 'g2', productId: 'p1', name: 'Color', position: 1, options: [] },
     })
     const user = userEvent.setup()
-    render(<VariantManager productId="p1" initialGroups={[]} />)
+    render(<VariantManager productId="p1" initialGroups={[]} images={[]} />)
 
     await user.type(screen.getByPlaceholderText(/new group/i), 'Color')
     await user.click(screen.getByRole('button', { name: /add group/i }))
@@ -71,7 +72,7 @@ describe('VariantManager', () => {
   it('shows a toast and does not add the group when the action fails', async () => {
     vi.mocked(addVariantGroup).mockResolvedValue({ error: 'Boom', group: null })
     const user = userEvent.setup()
-    render(<VariantManager productId="p1" initialGroups={[]} />)
+    render(<VariantManager productId="p1" initialGroups={[]} images={[]} />)
 
     await user.type(screen.getByPlaceholderText(/new group/i), 'Color')
     await user.click(screen.getByRole('button', { name: /add group/i }))
@@ -82,7 +83,7 @@ describe('VariantManager', () => {
 
   it('does not call the action for a blank group name', async () => {
     const user = userEvent.setup()
-    render(<VariantManager productId="p1" initialGroups={[]} />)
+    render(<VariantManager productId="p1" initialGroups={[]} images={[]} />)
 
     await user.click(screen.getByRole('button', { name: /add group/i }))
 
@@ -92,7 +93,7 @@ describe('VariantManager', () => {
   it('adds an option to an existing group', async () => {
     vi.mocked(addVariantOption).mockResolvedValue({ error: null, option: { id: 'o3', value: 'L' } })
     const user = userEvent.setup()
-    render(<VariantManager productId="p1" initialGroups={groups} />)
+    render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
 
     await user.type(screen.getByPlaceholderText(/add an option/i), 'L')
     await user.click(screen.getByRole('button', { name: /add option/i }))
@@ -104,7 +105,7 @@ describe('VariantManager', () => {
   it('optimistically removes a group and calls the delete action', async () => {
     vi.mocked(deleteVariantGroup).mockResolvedValue({ error: null })
     const user = userEvent.setup()
-    render(<VariantManager productId="p1" initialGroups={groups} />)
+    render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
 
     await user.click(screen.getByRole('button', { name: /delete size group/i }))
 
@@ -115,7 +116,7 @@ describe('VariantManager', () => {
   it('restores a group when deletion fails', async () => {
     vi.mocked(deleteVariantGroup).mockResolvedValue({ error: 'Nope' })
     const user = userEvent.setup()
-    render(<VariantManager productId="p1" initialGroups={groups} />)
+    render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
 
     await user.click(screen.getByRole('button', { name: /delete size group/i }))
 
@@ -126,7 +127,7 @@ describe('VariantManager', () => {
   it('removes an individual option and calls the delete action', async () => {
     vi.mocked(deleteVariantOption).mockResolvedValue({ error: null })
     const user = userEvent.setup()
-    render(<VariantManager productId="p1" initialGroups={groups} />)
+    render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
 
     await user.click(screen.getByRole('button', { name: /remove m/i }))
 

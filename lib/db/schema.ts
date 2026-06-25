@@ -45,6 +45,8 @@ export const productVariantOptions = pgTable('product_variant_options', {
     .notNull(),
   value: text('value').notNull(),
   position: integer('position').notNull().default(0),
+  // Featured image shown when this option is selected (esp. colour swatches).
+  imageId: uuid('image_id').references(() => productImages.id, { onDelete: 'set null' }),
 })
 
 export const chatSessions = pgTable('chat_sessions', {

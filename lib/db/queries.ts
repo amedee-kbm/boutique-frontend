@@ -133,6 +133,7 @@ export async function getProductById(id: string) {
           id: productVariantOptions.id,
           groupId: productVariantOptions.groupId,
           value: productVariantOptions.value,
+          imageId: productVariantOptions.imageId,
         })
         .from(productVariantOptions)
         .where(inArray(productVariantOptions.groupId, groupIds))
@@ -144,7 +145,7 @@ export async function getProductById(id: string) {
     name: group.name,
     options: options
       .filter((o) => o.groupId === group.id)
-      .map((o) => ({ id: o.id, value: o.value })),
+      .map((o) => ({ id: o.id, value: o.value, imageId: o.imageId })),
   }))
 
   return { ...rows[0], images, variantGroups }

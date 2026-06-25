@@ -42,7 +42,7 @@ interface ProductImage {
 interface VariantGroup {
   id: string
   name: string
-  options: { id: string; value: string }[]
+  options: { id: string; value: string; imageId: string | null }[]
 }
 
 interface Product {
@@ -309,7 +309,11 @@ export function ProductEditor({
 
       <SubScreen open={variantsOpen} onOpenChange={setVariantsOpen} title="Variants">
         {product ? (
-          <VariantManager productId={product.id} initialGroups={product.variantGroups} />
+          <VariantManager
+            productId={product.id}
+            initialGroups={product.variantGroups}
+            images={product.images}
+          />
         ) : (
           <VariantStager groups={variantGroups} onChange={setVariantGroups} />
         )}

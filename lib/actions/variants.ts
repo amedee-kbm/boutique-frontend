@@ -68,3 +68,20 @@ export async function deleteVariantOption(id: string, productId: string) {
   revalidatePath(`/admin/products/${productId}/edit`)
   return { error: null }
 }
+
+export async function setVariantOptionImage(
+  optionId: string,
+  productId: string,
+  imageId: string | null
+) {
+  try {
+    await db
+      .update(productVariantOptions)
+      .set({ imageId })
+      .where(eq(productVariantOptions.id, optionId))
+  } catch {
+    return { error: 'Could not set option image' }
+  }
+  revalidatePath(`/admin/products/${productId}/edit`)
+  return { error: null }
+}
