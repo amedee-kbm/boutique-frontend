@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { createProduct, uploadProductImage } from '@/lib/actions/products'
+import { addVariantGroup, addVariantOption } from '@/lib/actions/variants'
+import { VariantStager, type StagedVariantGroup } from '@/components/admin/VariantStager'
 import { EditorHeader } from '@/components/admin/ui/EditorHeader'
 import { FieldRow } from '@/components/admin/ui/FieldRow'
 import { SubScreen } from '@/components/admin/ui/SubScreen'
@@ -31,11 +33,14 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
   const [visible, setVisible] = useState(true)
   const [files, setFiles] = useState<File[]>([])
 
+  const [variantGroups, setVariantGroups] = useState<StagedVariantGroup[]>([])
+
   const [priceOpen, setPriceOpen] = useState(false)
   const [priceDraft, setPriceDraft] = useState('')
   const [descOpen, setDescOpen] = useState(false)
   const [descDraft, setDescDraft] = useState('')
   const [categoryOpen, setCategoryOpen] = useState(false)
+  const [variantsOpen, setVariantsOpen] = useState(false)
 
   const categoryName = categories.find((c) => c.id === categoryId)?.name
 
@@ -64,6 +69,18 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         imageData.set('file', file)
         const upload = await uploadProductImage(result.id, imageData)
         if (upload.error) toast.error(upload.error)
+      }
+
+      for (const group of variantGroups) {
+        const created = await addVariantGroup(result.id, group.name)
+        if (created.error || !created.group) {
+          toast.error(created.error ?? 'Could not add variant group')
+          continue
+        }
+        for (const option of group.options) {
+          const added = await addVariantOption(created.group.id, result.id, option.value)
+          if (added.error) toast.error(added.error)
+        }
       }
 
       toast.success('Product created')
@@ -119,6 +136,12 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
                 setPriceDraft(price)
                 setPriceOpen(true)
               }}
+            />
+            <FieldRow
+              label="Variants"
+              value={variantGroups.length ? variantGroups.map((g) => g.name).join(', ') : undefined}
+              emptyLabel="Add options (color, size, etc.)"
+              onClick={() => setVariantsOpen(true)}
             />
           </div>
         </SectionCard>
@@ -201,6 +224,15 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
             </Button>
           ))}
         </div>
+      </SubScreen>
+
+      <SubScreen
+        open={variantsOpen}
+        onOpenChange={setVariantsOpen}
+        title="Variants"
+        saveLabel="Done"
+      >
+        <VariantStager groups={variantGroups} onChange={setVariantGroups} />
       </SubScreen>
     </div>
   )

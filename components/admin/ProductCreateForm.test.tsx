@@ -12,9 +12,15 @@ vi.mock('@/lib/actions/products', () => ({
   uploadProductImage: vi.fn(),
 }))
 
+vi.mock('@/lib/actions/variants', () => ({
+  addVariantGroup: vi.fn(),
+  addVariantOption: vi.fn(),
+}))
+
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
 import { createProduct, uploadProductImage } from '@/lib/actions/products'
+import { addVariantGroup, addVariantOption } from '@/lib/actions/variants'
 import { toast } from 'sonner'
 import { ProductCreateForm } from '@/components/admin/ProductCreateForm'
 
@@ -110,6 +116,32 @@ describe('ProductCreateForm', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Slug taken'))
     expect(uploadProductImage).not.toHaveBeenCalled()
     expect(push).not.toHaveBeenCalled()
+  })
+
+  it('stages variants and persists them after the product is created', async () => {
+    vi.mocked(createProduct).mockResolvedValue({ error: null, id: 'new-id' })
+    vi.mocked(addVariantGroup).mockResolvedValue({
+      error: null,
+      group: { id: 'g1', productId: 'new-id', name: 'Size', position: 0, options: [] },
+    })
+    vi.mocked(addVariantOption).mockResolvedValue({ error: null, option: { id: 'o1', value: 'M' } })
+    const user = userEvent.setup()
+    render(<ProductCreateForm categories={categories} />)
+
+    await user.type(screen.getByLabelText('Product title'), 'Tee')
+
+    await user.click(screen.getByRole('button', { name: /add options/i }))
+    await user.type(await screen.findByPlaceholderText(/new group/i), 'Size')
+    await user.click(screen.getByRole('button', { name: /add group/i }))
+    await user.type(screen.getByPlaceholderText(/add an option/i), 'M')
+    await user.click(screen.getByRole('button', { name: /add option/i }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(createProduct).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(addVariantGroup).toHaveBeenCalledWith('new-id', 'Size'))
+    await waitFor(() => expect(addVariantOption).toHaveBeenCalledWith('g1', 'new-id', 'M'))
   })
 
   it('selects a category from the sub-screen', async () => {
