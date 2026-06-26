@@ -154,10 +154,7 @@ describe('ProductEditor (create)', () => {
     await user.type(screen.getByLabelText('Product title'), 'Tee')
 
     await user.click(screen.getByRole('button', { name: /add options/i }))
-    await user.type(await screen.findByPlaceholderText(/new group/i), 'Size')
-    await user.click(screen.getByRole('button', { name: /add group/i }))
-    await user.type(screen.getByPlaceholderText(/add an option/i), 'M')
-    await user.click(screen.getByRole('button', { name: /add option/i }))
+    await user.click(await screen.findByRole('button', { name: 'M' }))
     await user.click(screen.getByRole('button', { name: /close/i }))
 
     await user.click(screen.getByRole('button', { name: 'Save' }))

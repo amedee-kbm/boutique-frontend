@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ImageIcon, Plus, X } from 'lucide-react'
+import { ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -11,9 +11,8 @@ import {
   deleteVariantOption,
   setVariantOptionImage,
 } from '@/lib/actions/variants'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ProductThumb } from '@/components/admin/ProductThumb'
+import { VariantBuilder, type BuilderOption } from '@/components/admin/VariantBuilder'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,37 +38,6 @@ interface VariantGroup {
   options: VariantOption[]
 }
 
-function OptionInput({ onAdd }: { onAdd: (value: string) => void }) {
-  const [value, setValue] = useState('')
-
-  function submit() {
-    const trimmed = value.trim()
-    if (!trimmed) return
-    onAdd(trimmed)
-    setValue('')
-  }
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        submit()
-      }}
-      className="flex items-center gap-2"
-    >
-      <Input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Add an option (e.g. M)"
-        className="h-7"
-      />
-      <Button type="submit" size="icon-sm" variant="outline" aria-label="Add option">
-        <Plus className="size-4" />
-      </Button>
-    </form>
-  )
-}
-
 export function VariantManager({
   productId,
   initialGroups,
@@ -80,24 +48,80 @@ export function VariantManager({
   images: ProductImage[]
 }) {
   const [groups, setGroups] = useState<VariantGroup[]>(initialGroups)
-  const [newGroup, setNewGroup] = useState('')
   const [, startTransition] = useTransition()
 
-  function handleAddGroup() {
-    const name = newGroup.trim()
-    if (!name) return
-    setNewGroup('')
+  function toggleOption(groupName: string, value: string, selected: boolean) {
+    if (selected) {
+      startTransition(async () => {
+        let groupId = groups.find((g) => g.name === groupName)?.id
+        if (!groupId) {
+          const created = await addVariantGroup(productId, groupName)
+          if (created.error || !created.group) {
+            toast.error(created.error ?? 'Could not add group')
+            return
+          }
+          groupId = created.group.id
+          setGroups((prev) => [
+            ...prev,
+            { id: created.group.id, name: created.group.name, options: [] },
+          ])
+        }
+        const added = await addVariantOption(groupId, productId, value)
+        if (added.error || !added.option) {
+          toast.error(added.error ?? 'Could not add option')
+          return
+        }
+        const option = { ...added.option, imageId: null }
+        setGroups((prev) =>
+          prev.map((g) => (g.id === groupId ? { ...g, options: [...g.options, option] } : g))
+        )
+      })
+      return
+    }
+
+    const previous = groups
+    const group = groups.find((g) => g.name === groupName)
+    const option = group?.options.find((o) => o.value === value)
+    if (!group || !option) return
+    const lastOption = group.options.length === 1
+
+    setGroups((prev) =>
+      prev.flatMap((g) => {
+        if (g.id !== group.id) return [g]
+        const options = g.options.filter((o) => o.id !== option.id)
+        return options.length > 0 ? [{ ...g, options }] : []
+      })
+    )
+
+    startTransition(async () => {
+      const removed = await deleteVariantOption(option.id, productId)
+      if (removed.error) {
+        toast.error(removed.error)
+        setGroups(previous)
+        return
+      }
+      if (lastOption) {
+        const removedGroup = await deleteVariantGroup(group.id, productId)
+        if (removedGroup.error) {
+          toast.error(removedGroup.error)
+          setGroups(previous)
+        }
+      }
+    })
+  }
+
+  function addCustomGroup(name: string) {
     startTransition(async () => {
       const result = await addVariantGroup(productId, name)
       if (result.error || !result.group) {
         toast.error(result.error ?? 'Could not add group')
         return
       }
-      setGroups((prev) => [...prev, { ...result.group, options: [] }])
+      setGroups((prev) => [...prev, { id: result.group.id, name: result.group.name, options: [] }])
     })
   }
 
-  function handleDeleteGroup(id: string) {
+  function removeGroup(id: string) {
     const previous = groups
     setGroups((prev) => prev.filter((g) => g.id !== id))
     startTransition(async () => {
@@ -109,7 +133,7 @@ export function VariantManager({
     })
   }
 
-  function handleAddOption(groupId: string, value: string) {
+  function addCustomOption(groupId: string, value: string) {
     startTransition(async () => {
       const result = await addVariantOption(groupId, productId, value)
       if (result.error || !result.option) {
@@ -123,7 +147,23 @@ export function VariantManager({
     })
   }
 
-  function handleSetOptionImage(groupId: string, optionId: string, imageId: string | null) {
+  function removeOption(groupId: string, optionId: string) {
+    const previous = groups
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId ? { ...g, options: g.options.filter((o) => o.id !== optionId) } : g
+      )
+    )
+    startTransition(async () => {
+      const result = await deleteVariantOption(optionId, productId)
+      if (result.error) {
+        toast.error(result.error)
+        setGroups(previous)
+      }
+    })
+  }
+
+  function setOptionImage(groupId: string, optionId: string, imageId: string | null) {
     const previous = groups
     setGroups((prev) =>
       prev.map((g) =>
@@ -141,139 +181,62 @@ export function VariantManager({
     })
   }
 
-  function handleDeleteOption(groupId: string, optionId: string) {
-    const previous = groups
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.id === groupId ? { ...g, options: g.options.filter((o) => o.id !== optionId) } : g
-      )
+  function renderOptionImage(groupId: string, option: BuilderOption) {
+    const imageId = groups
+      .find((g) => g.id === groupId)
+      ?.options.find((o) => o.id === option.id)?.imageId
+    const image = images.find((img) => img.id === imageId) ?? null
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          disabled={images.length === 0}
+          render={
+            <button
+              type="button"
+              aria-label={`Image for ${option.value}`}
+              className="bg-muted text-muted-foreground hover:bg-muted/70 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border disabled:opacity-50"
+            >
+              {image ? (
+                <ProductThumb
+                  src={image.url}
+                  alt={image.alt ?? ''}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <ImageIcon className="size-4" />
+              )}
+            </button>
+          }
+        />
+        <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
+          <DropdownMenuItem onClick={() => setOptionImage(groupId, option.id, null)}>
+            <ImageIcon className="size-4" />
+            No image
+          </DropdownMenuItem>
+          {images.map((img) => (
+            <DropdownMenuItem
+              key={img.id}
+              onClick={() => setOptionImage(groupId, option.id, img.id)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.url} alt={img.alt ?? ''} className="size-6 rounded object-cover" />
+              {img.alt || 'Product image'}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
-    startTransition(async () => {
-      const result = await deleteVariantOption(optionId, productId)
-      if (result.error) {
-        toast.error(result.error)
-        setGroups(previous)
-      }
-    })
   }
 
   return (
-    <div className="space-y-4">
-      {groups.length === 0 && (
-        <p className="text-muted-foreground text-sm">
-          No variants yet. Add a group like “Size” or “Color”, then list its options.
-        </p>
-      )}
-
-      {groups.map((group) => (
-        <div key={group.id} className="space-y-2 rounded-lg border p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{group.name}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => handleDeleteGroup(group.id)}
-              aria-label={`Delete ${group.name} group`}
-            >
-              <X className="text-destructive size-4" />
-            </Button>
-          </div>
-
-          {group.options.length > 0 && (
-            <ul className="divide-y">
-              {group.options.map((option) => {
-                const image = images.find((img) => img.id === option.imageId) ?? null
-                return (
-                  <li key={option.id} className="flex items-center gap-3 py-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        disabled={images.length === 0}
-                        render={
-                          <button
-                            type="button"
-                            aria-label={`Image for ${option.value}`}
-                            className="bg-muted text-muted-foreground hover:bg-muted/70 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border disabled:opacity-50"
-                          >
-                            {image ? (
-                              <ProductThumb
-                                src={image.url}
-                                alt={image.alt ?? ''}
-                                className="size-full object-cover"
-                              />
-                            ) : (
-                              <ImageIcon className="size-4" />
-                            )}
-                          </button>
-                        }
-                      />
-                      <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
-                        <DropdownMenuItem
-                          onClick={() => handleSetOptionImage(group.id, option.id, null)}
-                        >
-                          <ImageIcon className="size-4" />
-                          No image
-                        </DropdownMenuItem>
-                        {images.map((img) => (
-                          <DropdownMenuItem
-                            key={img.id}
-                            onClick={() => handleSetOptionImage(group.id, option.id, img.id)}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={img.url}
-                              alt={img.alt ?? ''}
-                              className="size-6 rounded object-cover"
-                            />
-                            {img.alt || 'Product image'}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <span className="flex-1 text-sm">{option.value}</span>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteOption(group.id, option.id)}
-                      aria-label={`Remove ${option.value}`}
-                      className="hover:bg-muted text-muted-foreground rounded-full p-1.5"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-
-          {images.length === 0 && group.options.length > 0 && (
-            <p className="text-muted-foreground text-xs">
-              Add product images to assign one per option.
-            </p>
-          )}
-
-          <OptionInput onAdd={(value) => handleAddOption(group.id, value)} />
-        </div>
-      ))}
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          handleAddGroup()
-        }}
-        className="flex items-center gap-2"
-      >
-        <Input
-          value={newGroup}
-          onChange={(e) => setNewGroup(e.target.value)}
-          placeholder="New group (e.g. Size)"
-        />
-        <Button type="submit" variant="outline" size="sm" aria-label="Add group">
-          <Plus className="size-4" />
-          Group
-        </Button>
-      </form>
-    </div>
+    <VariantBuilder
+      groups={groups}
+      onToggleOption={toggleOption}
+      onAddCustomGroup={addCustomGroup}
+      onRemoveGroup={removeGroup}
+      onAddCustomOption={addCustomOption}
+      onRemoveOption={removeOption}
+      renderOptionTrailing={images.length > 0 ? renderOptionImage : undefined}
+    />
   )
 }

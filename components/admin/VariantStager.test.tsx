@@ -11,28 +11,42 @@ function Harness() {
 }
 
 describe('VariantStager', () => {
-  it('shows an empty hint with no groups', () => {
+  it('offers the common fashion types as presets', () => {
     render(<Harness />)
-    expect(screen.getByText(/no variants yet/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Size' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Weight' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Colour' })).toBeInTheDocument()
   })
 
-  it('adds a group, then options to it, and removes them', async () => {
+  it('toggles a preset option on and off by tapping its chip', async () => {
     const user = userEvent.setup()
     render(<Harness />)
 
-    await user.type(screen.getByPlaceholderText(/new group/i), 'Size')
+    expect(screen.getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(screen.getByRole('button', { name: 'M' }))
+    expect(screen.getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'M' }))
+    expect(screen.getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('still supports a custom type with freeform options', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    await user.type(screen.getByPlaceholderText(/new type/i), 'Style')
     await user.click(screen.getByRole('button', { name: /add group/i }))
-    expect(screen.getByText('Size')).toBeInTheDocument()
+    expect(screen.getByText('Style')).toBeInTheDocument()
 
-    await user.type(screen.getByPlaceholderText(/add an option/i), 'M')
+    await user.type(screen.getByPlaceholderText(/add an option/i), 'Cropped')
     await user.click(screen.getByRole('button', { name: /add option/i }))
-    expect(screen.getByText('M')).toBeInTheDocument()
+    expect(screen.getByText('Cropped')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /remove m/i }))
-    expect(screen.queryByText('M')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /remove cropped/i }))
+    expect(screen.queryByText('Cropped')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /delete size group/i }))
-    expect(screen.queryByText('Size')).not.toBeInTheDocument()
-    expect(screen.getByText(/no variants yet/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /delete style group/i }))
+    expect(screen.queryByText('Style')).not.toBeInTheDocument()
   })
 })
