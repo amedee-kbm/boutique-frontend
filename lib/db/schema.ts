@@ -1,4 +1,14 @@
-import { boolean, integer, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  integer,
+  numeric,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+  type AnyPgColumn,
+} from 'drizzle-orm/pg-core'
 
 export const categories = pgTable('categories', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -27,6 +37,10 @@ export const productImages = pgTable('product_images', {
   url: text('url').notNull(),
   alt: text('alt'),
   position: integer('position').notNull().default(0),
+  // Assigns an image to a colour option so a colour can own several photos.
+  optionId: uuid('option_id').references((): AnyPgColumn => productVariantOptions.id, {
+    onDelete: 'set null',
+  }),
 })
 
 export const productVariantGroups = pgTable('product_variant_groups', {
@@ -46,8 +60,43 @@ export const productVariantOptions = pgTable('product_variant_options', {
   value: text('value').notNull(),
   position: integer('position').notNull().default(0),
   // Featured image shown when this option is selected (esp. colour swatches).
-  imageId: uuid('image_id').references(() => productImages.id, { onDelete: 'set null' }),
+  imageId: uuid('image_id').references((): AnyPgColumn => productImages.id, {
+    onDelete: 'set null',
+  }),
+  // Solid colour for storefront swatch squares; only meaningful for colour options.
+  hex: text('hex'),
 })
+
+export const categoryFilters = pgTable('category_filters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  categoryId: uuid('category_id')
+    .references(() => categories.id, { onDelete: 'cascade' })
+    .notNull(),
+  name: text('name').notNull(),
+  position: integer('position').notNull().default(0),
+})
+
+export const categoryFilterOptions = pgTable('category_filter_options', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  filterId: uuid('filter_id')
+    .references(() => categoryFilters.id, { onDelete: 'cascade' })
+    .notNull(),
+  value: text('value').notNull(),
+  position: integer('position').notNull().default(0),
+})
+
+export const productFilterValues = pgTable(
+  'product_filter_values',
+  {
+    productId: uuid('product_id')
+      .references(() => products.id, { onDelete: 'cascade' })
+      .notNull(),
+    optionId: uuid('option_id')
+      .references(() => categoryFilterOptions.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.productId, t.optionId] })]
+)
 
 export const chatSessions = pgTable('chat_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -65,4 +114,20 @@ export const chatMessages = pgTable('chat_messages', {
   content: text('content').notNull(),
   fromAdmin: boolean('from_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// A message carrying items is an inquiry: one message renders N product cards.
+// Snapshot columns let a card still render after the product changes or hides.
+export const chatMessageItems = pgTable('chat_message_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  messageId: uuid('message_id')
+    .references(() => chatMessages.id, { onDelete: 'cascade' })
+    .notNull(),
+  productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+  position: integer('position').notNull().default(0),
+  nameSnapshot: text('name_snapshot').notNull(),
+  colorValue: text('color_value'),
+  sizeValue: text('size_value'),
+  priceSnapshot: numeric('price_snapshot', { precision: 10, scale: 2 }).notNull(),
+  imageUrlSnapshot: text('image_url_snapshot'),
 })

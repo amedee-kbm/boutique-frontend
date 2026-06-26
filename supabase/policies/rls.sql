@@ -264,6 +264,138 @@ create policy "chat_messages: admin all"
   with check ((select public.is_admin()));
 
 -- ============================================================
+-- category_filters / category_filter_options
+-- Read: everyone | Write: admin only (mirror categories)
+-- ============================================================
+create index if not exists category_filters_category_id_idx
+  on public.category_filters (category_id);
+
+create index if not exists category_filter_options_filter_id_idx
+  on public.category_filter_options (filter_id);
+
+alter table public.category_filters        enable row level security;
+alter table public.category_filter_options enable row level security;
+
+drop policy if exists "category_filters: read all"    on public.category_filters;
+drop policy if exists "category_filters: admin write" on public.category_filters;
+
+create policy "category_filters: read all"
+  on public.category_filters
+  for select
+  to anon, authenticated
+  using (true);
+
+create policy "category_filters: admin write"
+  on public.category_filters
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+drop policy if exists "category_filter_options: read all"    on public.category_filter_options;
+drop policy if exists "category_filter_options: admin write" on public.category_filter_options;
+
+create policy "category_filter_options: read all"
+  on public.category_filter_options
+  for select
+  to anon, authenticated
+  using (true);
+
+create policy "category_filter_options: admin write"
+  on public.category_filter_options
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+-- ============================================================
+-- product_filter_values
+-- Read: anon sees values for visible products only | admin sees all
+-- Write: admin only (mirror product_images)
+-- ============================================================
+create index if not exists product_filter_values_product_id_idx
+  on public.product_filter_values (product_id);
+
+create index if not exists product_filter_values_option_id_idx
+  on public.product_filter_values (option_id);
+
+alter table public.product_filter_values enable row level security;
+
+drop policy if exists "product_filter_values: read"        on public.product_filter_values;
+drop policy if exists "product_filter_values: admin write" on public.product_filter_values;
+
+create policy "product_filter_values: read"
+  on public.product_filter_values
+  for select
+  to anon, authenticated
+  using (
+    (select public.is_admin())
+    or exists (
+      select 1 from public.products
+      where products.id = product_filter_values.product_id
+        and products.visible = true
+    )
+  );
+
+create policy "product_filter_values: admin write"
+  on public.product_filter_values
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+-- ============================================================
+-- chat_message_items
+-- Guests: read & insert items in their own sessions only
+-- Admin: read & write all (mirror chat_messages)
+-- ============================================================
+create index if not exists chat_message_items_message_id_idx
+  on public.chat_message_items (message_id);
+
+alter table public.chat_message_items enable row level security;
+
+drop policy if exists "chat_message_items: guest read own session"   on public.chat_message_items;
+drop policy if exists "chat_message_items: guest insert own session" on public.chat_message_items;
+drop policy if exists "chat_message_items: admin all"                on public.chat_message_items;
+
+create policy "chat_message_items: guest read own session"
+  on public.chat_message_items
+  for select
+  to authenticated
+  using (
+    (select public.is_admin())
+    or exists (
+      select 1
+      from public.chat_messages m
+      join public.chat_sessions s on s.id = m.session_id
+      where m.id = chat_message_items.message_id
+        and s.created_by = (select auth.uid())
+    )
+  );
+
+create policy "chat_message_items: guest insert own session"
+  on public.chat_message_items
+  for insert
+  to authenticated
+  with check (
+    not (select public.is_admin())
+    and exists (
+      select 1
+      from public.chat_messages m
+      join public.chat_sessions s on s.id = m.session_id
+      where m.id = chat_message_items.message_id
+        and s.created_by = (select auth.uid())
+    )
+  );
+
+create policy "chat_message_items: admin all"
+  on public.chat_message_items
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+-- ============================================================
 -- Realtime
 -- Broadcast row changes on chat tables so the admin inbox and
 -- the customer widget receive live updates. Idempotent.
