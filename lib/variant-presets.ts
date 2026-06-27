@@ -80,3 +80,26 @@ export function presetByName(name: string): VariantPresetType | undefined {
 export function isPresetGroup(name: string): boolean {
   return PRESET_GROUP_NAMES.includes(name)
 }
+
+// Starting suggestions for the colour-swatch picker. The seller can adjust each
+// before saving — the storefront only ever shows the saved hex, never a guess.
+const NAMED_COLOR_HEX: Record<string, string> = {
+  black: '#000000',
+  white: '#ffffff',
+  grey: '#9ca3af',
+  beige: '#e3d9c6',
+  khaki: '#94804f',
+  brown: '#7c4a2d',
+  apricot: '#f4b183',
+  pink: '#f7a8c4',
+  red: '#d92d20',
+  yellow: '#f5c518',
+  green: '#3f9142',
+  blue: '#2563eb',
+  navy: '#1e2a55',
+  purple: '#7c3aed',
+}
+
+export function defaultHexForName(value: string): string {
+  return NAMED_COLOR_HEX[value.trim().toLowerCase()] ?? '#cccccc'
+}

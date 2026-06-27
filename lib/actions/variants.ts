@@ -5,7 +5,11 @@ import { asc, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { productVariantGroups, productVariantOptions } from '@/lib/db/schema'
-import { variantGroupSchema, variantOptionSchema } from '@/lib/actions/variants.schema'
+import {
+  hexColorSchema,
+  variantGroupSchema,
+  variantOptionSchema,
+} from '@/lib/actions/variants.schema'
 
 async function nextPosition(rows: { position: number }[]) {
   return rows.length > 0 ? (rows[rows.length - 1]?.position ?? -1) + 1 : 0
@@ -81,6 +85,23 @@ export async function setVariantOptionImage(
       .where(eq(productVariantOptions.id, optionId))
   } catch {
     return { error: 'Could not set option image' }
+  }
+  revalidatePath(`/admin/products/${productId}/edit`)
+  return { error: null }
+}
+
+export async function setVariantOptionHex(optionId: string, productId: string, hex: string | null) {
+  if (hex !== null) {
+    const parsed = hexColorSchema.safeParse(hex)
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid colour' }
+  }
+  try {
+    await db
+      .update(productVariantOptions)
+      .set({ hex })
+      .where(eq(productVariantOptions.id, optionId))
+  } catch {
+    return { error: 'Could not set option colour' }
   }
   revalidatePath(`/admin/products/${productId}/edit`)
   return { error: null }

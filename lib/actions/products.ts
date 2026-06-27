@@ -162,6 +162,21 @@ export async function updateProductImageAlt(imageId: string, alt: string) {
   return { error: null }
 }
 
+export async function setProductImageOption(imageId: string, optionId: string | null) {
+  const rows = await db
+    .select({ productId: productImages.productId })
+    .from(productImages)
+    .where(eq(productImages.id, imageId))
+    .limit(1)
+
+  if (!rows[0]) return { error: 'Image not found' }
+
+  await db.update(productImages).set({ optionId }).where(eq(productImages.id, imageId))
+
+  revalidatePath(`/admin/products/${rows[0].productId}/edit`)
+  return { error: null }
+}
+
 export async function deleteProductImage(imageId: string) {
   const rows = await db
     .select({ url: productImages.url, productId: productImages.productId })
@@ -223,6 +238,10 @@ export async function sendAdminMessage(sessionId: string, content: string) {
     .from('chat_sessions')
     .update({ last_message_at: new Date().toISOString() })
     .eq('id', sessionId)
+
+  // Refresh the inbox preview/order and this conversation after the reply.
+  revalidatePath('/admin/chat')
+  revalidatePath(`/admin/chat/${sessionId}`)
 
   return {
     error: null,

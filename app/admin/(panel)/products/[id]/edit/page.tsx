@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { getAllCategories, getProductById } from '@/lib/db/queries'
+import { getAllCategories, getCategoryFilters, getProductById } from '@/lib/db/queries'
 import { ProductEditor } from '@/components/admin/ProductEditor'
 
 export const metadata: Metadata = { title: 'Edit product — Zita Boutique' }
@@ -12,9 +12,12 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
   if (!product) notFound()
 
+  const categoryFilters = product.categoryId ? await getCategoryFilters(product.categoryId) : []
+
   return (
     <ProductEditor
       categories={categories}
+      categoryFilters={categoryFilters}
       product={{
         id: product.id,
         name: product.name,
@@ -23,8 +26,14 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         price: product.price,
         categoryId: product.categoryId,
         visible: product.visible,
-        images: product.images.map((img) => ({ id: img.id, url: img.url, alt: img.alt })),
+        images: product.images.map((img) => ({
+          id: img.id,
+          url: img.url,
+          alt: img.alt,
+          optionId: img.optionId,
+        })),
         variantGroups: product.variantGroups,
+        filterOptionIds: product.filterOptionIds,
       }}
     />
   )

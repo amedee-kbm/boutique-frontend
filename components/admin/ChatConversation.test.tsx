@@ -18,8 +18,17 @@ const channel = {
     return channel
   }),
 }
+const itemsQuery = {
+  select: vi.fn(() => itemsQuery),
+  eq: vi.fn(() => itemsQuery),
+  order: vi.fn(() => Promise.resolve({ data: [] })),
+}
 vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({ channel: () => channel, removeChannel }),
+  createClient: () => ({
+    channel: () => channel,
+    removeChannel,
+    from: () => itemsQuery,
+  }),
 }))
 
 import { sendAdminMessage } from '@/lib/actions/products'
@@ -27,8 +36,14 @@ import { toast } from 'sonner'
 import { ChatConversation, type ChatMessage } from '@/components/admin/ChatConversation'
 
 const messages: ChatMessage[] = [
-  { id: 'm1', content: 'Hi there', fromAdmin: false, createdAt: '2026-06-18T10:00:00Z' },
-  { id: 'm2', content: 'How can I help?', fromAdmin: true, createdAt: '2026-06-18T10:01:00Z' },
+  { id: 'm1', content: 'Hi there', fromAdmin: false, createdAt: '2026-06-18T10:00:00Z', items: [] },
+  {
+    id: 'm2',
+    content: 'How can I help?',
+    fromAdmin: true,
+    createdAt: '2026-06-18T10:01:00Z',
+    items: [],
+  },
 ]
 
 beforeEach(() => {

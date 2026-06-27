@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ImageIcon } from 'lucide-react'
+import { ImageIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -9,8 +9,10 @@ import {
   addVariantOption,
   deleteVariantGroup,
   deleteVariantOption,
+  setVariantOptionHex,
   setVariantOptionImage,
 } from '@/lib/actions/variants'
+import { defaultHexForName } from '@/lib/variant-presets'
 import { ProductThumb } from '@/components/admin/ProductThumb'
 import { VariantBuilder, type BuilderOption } from '@/components/admin/VariantBuilder'
 import {
@@ -30,6 +32,7 @@ interface VariantOption {
   id: string
   value: string
   imageId: string | null
+  hex: string | null
 }
 
 interface VariantGroup {
@@ -71,7 +74,7 @@ export function VariantManager({
           toast.error(added.error ?? 'Could not add option')
           return
         }
-        const option = { ...added.option, imageId: null }
+        const option = { ...added.option, imageId: null, hex: null }
         setGroups((prev) =>
           prev.map((g) => (g.id === groupId ? { ...g, options: [...g.options, option] } : g))
         )
@@ -140,7 +143,7 @@ export function VariantManager({
         toast.error(result.error ?? 'Could not add option')
         return
       }
-      const option = { ...result.option, imageId: null }
+      const option = { ...result.option, imageId: null, hex: null }
       setGroups((prev) =>
         prev.map((g) => (g.id === groupId ? { ...g, options: [...g.options, option] } : g))
       )
@@ -179,6 +182,73 @@ export function VariantManager({
         setGroups(previous)
       }
     })
+  }
+
+  function setOptionHex(groupId: string, optionId: string, hex: string | null) {
+    const previous = groups
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? { ...g, options: g.options.map((o) => (o.id === optionId ? { ...o, hex } : o)) }
+          : g
+      )
+    )
+    startTransition(async () => {
+      const result = await setVariantOptionHex(optionId, productId, hex)
+      if (result.error) {
+        toast.error(result.error)
+        setGroups(previous)
+      }
+    })
+  }
+
+  function renderColorSwatch(groupId: string, option: BuilderOption) {
+    const hex = groups.find((g) => g.id === groupId)?.options.find((o) => o.id === option.id)?.hex
+    return (
+      <div className="flex items-center gap-1">
+        <label
+          className="relative size-8 shrink-0 cursor-pointer overflow-hidden rounded-md border"
+          aria-label={`Colour for ${option.value}`}
+        >
+          <span className="block size-full" style={{ backgroundColor: hex ?? 'transparent' }} />
+          {!hex && (
+            <span className="text-muted-foreground absolute inset-0 grid place-items-center text-[10px]">
+              +
+            </span>
+          )}
+          <input
+            type="color"
+            value={hex ?? defaultHexForName(option.value)}
+            onChange={(e) =>
+              setGroups((prev) =>
+                prev.map((g) =>
+                  g.id === groupId
+                    ? {
+                        ...g,
+                        options: g.options.map((o) =>
+                          o.id === option.id ? { ...o, hex: e.target.value } : o
+                        ),
+                      }
+                    : g
+                )
+              )
+            }
+            onBlur={(e) => setOptionHex(groupId, option.id, e.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+          />
+        </label>
+        {hex && (
+          <button
+            type="button"
+            onClick={() => setOptionHex(groupId, option.id, null)}
+            aria-label={`Clear colour for ${option.value}`}
+            className="text-muted-foreground hover:text-foreground p-1"
+          >
+            <X className="size-3" />
+          </button>
+        )}
+      </div>
+    )
   }
 
   function renderOptionImage(groupId: string, option: BuilderOption) {
@@ -228,6 +298,15 @@ export function VariantManager({
     )
   }
 
+  function renderOptionTrailing(groupId: string, option: BuilderOption) {
+    return (
+      <div className="flex items-center gap-2">
+        {renderColorSwatch(groupId, option)}
+        {images.length > 0 && renderOptionImage(groupId, option)}
+      </div>
+    )
+  }
+
   return (
     <VariantBuilder
       groups={groups}
@@ -236,7 +315,7 @@ export function VariantManager({
       onRemoveGroup={removeGroup}
       onAddCustomOption={addCustomOption}
       onRemoveOption={removeOption}
-      renderOptionTrailing={images.length > 0 ? renderOptionImage : undefined}
+      renderOptionTrailing={renderOptionTrailing}
     />
   )
 }

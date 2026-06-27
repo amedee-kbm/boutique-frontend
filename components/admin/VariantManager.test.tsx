@@ -8,6 +8,7 @@ vi.mock('@/lib/actions/variants', () => ({
   deleteVariantGroup: vi.fn(),
   deleteVariantOption: vi.fn(),
   setVariantOptionImage: vi.fn(),
+  setVariantOptionHex: vi.fn(),
 }))
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
@@ -26,8 +27,8 @@ const groups = [
     id: 'g1',
     name: 'Size',
     options: [
-      { id: 'o1', value: 'S', imageId: null },
-      { id: 'o2', value: 'M', imageId: null },
+      { id: 'o1', value: 'S', imageId: null, hex: null },
+      { id: 'o2', value: 'M', imageId: null, hex: null },
     ],
   },
 ]
@@ -89,7 +90,9 @@ describe('VariantManager', () => {
   it('deletes the group when its last option is removed', async () => {
     vi.mocked(deleteVariantOption).mockResolvedValue({ error: null })
     vi.mocked(deleteVariantGroup).mockResolvedValue({ error: null })
-    const single = [{ id: 'g1', name: 'Size', options: [{ id: 'o1', value: 'S', imageId: null }] }]
+    const single = [
+      { id: 'g1', name: 'Size', options: [{ id: 'o1', value: 'S', imageId: null, hex: null }] },
+    ]
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={single} images={[]} />)
 

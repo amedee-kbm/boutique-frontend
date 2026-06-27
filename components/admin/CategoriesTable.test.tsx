@@ -10,8 +10,8 @@ vi.mock('@/lib/actions/categories', () => ({
 import { CategoriesTable } from '@/components/admin/CategoriesTable'
 
 const categories = [
-  { id: 'a', name: 'Dresses', slug: 'dresses', productCount: 3 },
-  { id: 'b', name: 'Shoes', slug: 'shoes', productCount: 0 },
+  { id: 'a', name: 'Dresses', slug: 'dresses', productCount: 3, filters: [] },
+  { id: 'b', name: 'Shoes', slug: 'shoes', productCount: 0, filters: [] },
 ]
 
 describe('CategoriesTable', () => {

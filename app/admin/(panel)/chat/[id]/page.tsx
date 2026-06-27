@@ -40,6 +40,7 @@ export default async function ChatSessionPage({ params }: { params: Promise<{ id
           content: m.content,
           fromAdmin: m.fromAdmin,
           createdAt: m.createdAt,
+          items: m.items,
         }))}
       />
     </>

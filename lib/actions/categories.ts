@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { categories } from '@/lib/db/schema'
 import { categoryFormSchema } from '@/lib/actions/categories.schema'
+import { seedDefaultFilters } from '@/lib/actions/category-filters'
 
 function slugify(str: string): string {
   return str
@@ -28,7 +29,11 @@ export async function createCategory(formData: FormData) {
   }
 
   try {
-    await db.insert(categories).values(parsed.data)
+    const [created] = await db
+      .insert(categories)
+      .values(parsed.data)
+      .returning({ id: categories.id })
+    if (created) await seedDefaultFilters(created.id, parsed.data.name)
   } catch {
     return { error: 'A category with that slug already exists.' }
   }

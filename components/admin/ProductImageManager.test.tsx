@@ -8,6 +8,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }))
 vi.mock('@/lib/actions/products', () => ({
   deleteProductImage: vi.fn(),
   reorderProductImages: vi.fn(),
+  setProductImageOption: vi.fn(),
   updateProductImageAlt: vi.fn(),
   uploadProductImage: vi.fn(),
 }))
@@ -16,6 +17,7 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
 import {
   deleteProductImage,
+  setProductImageOption,
   updateProductImageAlt,
   uploadProductImage,
 } from '@/lib/actions/products'
@@ -23,8 +25,13 @@ import { toast } from 'sonner'
 import { ProductImageManager } from '@/components/admin/ProductImageManager'
 
 const images = [
-  { id: 'img1', url: 'https://cdn/1.jpg', alt: 'Front' },
-  { id: 'img2', url: 'https://cdn/2.jpg', alt: null },
+  { id: 'img1', url: 'https://cdn/1.jpg', alt: 'Front', optionId: null },
+  { id: 'img2', url: 'https://cdn/2.jpg', alt: null, optionId: null },
+]
+
+const colorOptions = [
+  { id: 'opt-red', value: 'Red', hex: '#d92d20' },
+  { id: 'opt-blue', value: 'Blue', hex: '#2563eb' },
 ]
 
 beforeEach(() => {
@@ -33,12 +40,12 @@ beforeEach(() => {
 
 describe('ProductImageManager', () => {
   it('renders the upload dropzone prompt', () => {
-    render(<ProductImageManager productId="p1" initialImages={[]} />)
+    render(<ProductImageManager productId="p1" initialImages={[]} colorOptions={[]} />)
     expect(screen.getByText(/drag photos here/i)).toBeInTheDocument()
   })
 
   it('renders the existing images with their alt text', () => {
-    render(<ProductImageManager productId="p1" initialImages={images} />)
+    render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
     expect(screen.getByAltText('Front')).toBeInTheDocument()
     const altInputs = screen.getAllByLabelText('Image alt text')
     expect(altInputs).toHaveLength(2)
@@ -48,7 +55,9 @@ describe('ProductImageManager', () => {
   it('uploads a dropped file and refreshes', async () => {
     vi.mocked(uploadProductImage).mockResolvedValue({ error: null, url: 'https://cdn/new.jpg' })
     const user = userEvent.setup()
-    const { container } = render(<ProductImageManager productId="p1" initialImages={[]} />)
+    const { container } = render(
+      <ProductImageManager productId="p1" initialImages={[]} colorOptions={[]} />
+    )
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
     const file = new File(['data'], 'photo.png', { type: 'image/png' })
@@ -64,7 +73,7 @@ describe('ProductImageManager', () => {
   it('optimistically removes an image and calls the delete action', async () => {
     vi.mocked(deleteProductImage).mockResolvedValue({ error: null })
     const user = userEvent.setup()
-    render(<ProductImageManager productId="p1" initialImages={images} />)
+    render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
 
     const firstImageCell = screen.getByAltText('Front').closest('div') as HTMLElement
     await user.click(within(firstImageCell).getByRole('button', { name: /remove image/i }))
@@ -76,7 +85,7 @@ describe('ProductImageManager', () => {
   it('restores the image when deletion fails', async () => {
     vi.mocked(deleteProductImage).mockResolvedValue({ error: 'Boom' })
     const user = userEvent.setup()
-    render(<ProductImageManager productId="p1" initialImages={images} />)
+    render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
 
     const firstImageCell = screen.getByAltText('Front').closest('div') as HTMLElement
     await user.click(within(firstImageCell).getByRole('button', { name: /remove image/i }))
@@ -88,7 +97,7 @@ describe('ProductImageManager', () => {
   it('saves alt text when the field loses focus and the value changed', async () => {
     vi.mocked(updateProductImageAlt).mockResolvedValue({ error: null })
     const user = userEvent.setup()
-    render(<ProductImageManager productId="p1" initialImages={images} />)
+    render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
 
     const altInput = screen.getAllByLabelText('Image alt text')[0]
     await user.clear(altInput)
@@ -100,12 +109,25 @@ describe('ProductImageManager', () => {
 
   it('does not save alt text when the value is unchanged', async () => {
     const user = userEvent.setup()
-    render(<ProductImageManager productId="p1" initialImages={images} />)
+    render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
 
     const altInput = screen.getAllByLabelText('Image alt text')[0]
     await user.click(altInput)
     await user.tab()
 
     expect(updateProductImageAlt).not.toHaveBeenCalled()
+  })
+
+  it('assigns a colour option to an image', async () => {
+    vi.mocked(setProductImageOption).mockResolvedValue({ error: null })
+    const user = userEvent.setup()
+    render(
+      <ProductImageManager productId="p1" initialImages={images} colorOptions={colorOptions} />
+    )
+
+    await user.click(screen.getAllByRole('button', { name: /assign colour/i })[0])
+    await user.click(await screen.findByRole('menuitem', { name: 'Red' }))
+
+    await waitFor(() => expect(setProductImageOption).toHaveBeenCalledWith('img1', 'opt-red'))
   })
 })

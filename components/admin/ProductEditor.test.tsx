@@ -49,6 +49,7 @@ const product = {
   visible: true,
   images: [],
   variantGroups: [],
+  filterOptionIds: [],
 }
 
 beforeAll(() => {

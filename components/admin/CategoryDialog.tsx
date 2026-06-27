@@ -5,6 +5,8 @@ import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { createCategory, updateCategory } from '@/lib/actions/categories'
+import type { CategoryFilter } from '@/lib/db/queries'
+import { CategoryFilterManager } from '@/components/admin/CategoryFilterManager'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -20,10 +22,11 @@ import { Label } from '@/components/ui/label'
 
 interface CategoryDialogProps {
   category?: { id: string; name: string; slug: string }
+  filters?: CategoryFilter[]
   trigger?: React.ReactElement
 }
 
-export function CategoryDialog({ category, trigger }: CategoryDialogProps) {
+export function CategoryDialog({ category, filters, trigger }: CategoryDialogProps) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const isEditing = Boolean(category)
@@ -90,6 +93,12 @@ export function CategoryDialog({ category, trigger }: CategoryDialogProps) {
               </p>
             </div>
           </div>
+
+          {isEditing && (
+            <div className="border-t py-4">
+              <CategoryFilterManager categoryId={category!.id} initialFilters={filters ?? []} />
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="submit" disabled={isPending}>

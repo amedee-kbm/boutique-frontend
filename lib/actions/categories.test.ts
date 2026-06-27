@@ -15,7 +15,7 @@ import { createCategory, deleteCategory, updateCategory } from '@/lib/actions/ca
 
 function chain(result: unknown = undefined) {
   const c: Record<string, ReturnType<typeof vi.fn>> = {}
-  for (const m of ['values', 'set', 'where']) c[m] = vi.fn(() => c)
+  for (const m of ['values', 'set', 'where', 'returning']) c[m] = vi.fn(() => c)
   ;(c as unknown as { then: unknown }).then = (
     onF: (v: unknown) => unknown,
     onR: (e: unknown) => unknown
@@ -84,7 +84,7 @@ describe('categoryFormSchema', () => {
 
 describe('createCategory', () => {
   it('inserts the category and revalidates the list', async () => {
-    const c = chain()
+    const c = chain([{ id: 'cat1' }])
     mockedDb.insert.mockReturnValue(c)
 
     const result = await createCategory(form({ name: 'Dresses', slug: 'dresses' }))
@@ -95,7 +95,7 @@ describe('createCategory', () => {
   })
 
   it('auto-generates a slug from the name when blank', async () => {
-    const c = chain()
+    const c = chain([{ id: 'cat1' }])
     mockedDb.insert.mockReturnValue(c)
 
     await createCategory(form({ name: 'Summer & Sun Dresses' }))

@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { createProduct, updateProduct, uploadProductImage } from '@/lib/actions/products'
+import { setProductFilterValue } from '@/lib/actions/product-filters'
 import { formatPrice } from '@/lib/format'
 import { addVariantGroup, addVariantOption } from '@/lib/actions/variants'
+import type { CategoryFilter } from '@/lib/db/queries'
 import { VariantStager, type StagedVariantGroup } from '@/components/admin/VariantStager'
 import { VariantManager } from '@/components/admin/VariantManager'
 import { ProductImageManager } from '@/components/admin/ProductImageManager'
@@ -37,12 +39,13 @@ interface ProductImage {
   id: string
   url: string
   alt: string | null
+  optionId: string | null
 }
 
 interface VariantGroup {
   id: string
   name: string
-  options: { id: string; value: string; imageId: string | null }[]
+  options: { id: string; value: string; imageId: string | null; hex: string | null }[]
 }
 
 interface Product {
@@ -55,6 +58,7 @@ interface Product {
   visible: boolean
   images: ProductImage[]
   variantGroups: VariantGroup[]
+  filterOptionIds: string[]
 }
 
 function StatusSelector({
@@ -89,9 +93,11 @@ function StatusSelector({
 
 export function ProductEditor({
   categories,
+  categoryFilters = [],
   product,
 }: {
   categories: Category[]
+  categoryFilters?: CategoryFilter[]
   product?: Product
 }) {
   const router = useRouter()
@@ -105,12 +111,32 @@ export function ProductEditor({
   const [visible, setVisible] = useState(product?.visible ?? true)
   const [files, setFiles] = useState<File[]>([])
   const [variantGroups, setVariantGroups] = useState<StagedVariantGroup[]>([])
+  const [filterOptionIds, setFilterOptionIds] = useState<string[]>(product?.filterOptionIds ?? [])
 
   const [priceOpen, setPriceOpen] = useState(false)
   const [priceDraft, setPriceDraft] = useState('')
   const [descOpen, setDescOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
   const [variantsOpen, setVariantsOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
+  const filterSummary =
+    filterOptionIds.length > 0 ? `${filterOptionIds.length} selected` : undefined
+
+  function toggleFilterOption(optionId: string, selected: boolean) {
+    if (!product) return
+    const previous = filterOptionIds
+    setFilterOptionIds((prev) =>
+      selected ? [...prev, optionId] : prev.filter((id) => id !== optionId)
+    )
+    startTransition(async () => {
+      const result = await setProductFilterValue(product.id, optionId, selected)
+      if (result.error) {
+        toast.error(result.error)
+        setFilterOptionIds(previous)
+      }
+    })
+  }
 
   const categoryName = categories.find((c) => c.id === categoryId)?.name
 
@@ -202,6 +228,11 @@ export function ProductEditor({
             key={product.images.map((img) => img.id).join(',')}
             productId={product.id}
             initialImages={product.images}
+            colorOptions={
+              product.variantGroups
+                .find((g) => g.name === 'Colour')
+                ?.options.map((o) => ({ id: o.id, value: o.value, hex: o.hex })) ?? []
+            }
           />
         ) : (
           <MediaZone onChange={setFiles} />
@@ -246,6 +277,14 @@ export function ProductEditor({
               emptyLabel="Add options (color, size, etc.)"
               onClick={() => setVariantsOpen(true)}
             />
+            {isEditing && categoryFilters.length > 0 && (
+              <FieldRow
+                label="Filters"
+                value={filterSummary}
+                emptyLabel="Tag for category filters"
+                onClick={() => setFiltersOpen(true)}
+              />
+            )}
           </div>
         </SectionCard>
       </div>
@@ -303,6 +342,37 @@ export function ProductEditor({
             >
               {c.name}
             </Button>
+          ))}
+        </div>
+      </SubScreen>
+
+      <SubScreen open={filtersOpen} onOpenChange={setFiltersOpen} title="Filters">
+        <div className="space-y-5">
+          <p className="text-muted-foreground text-sm">
+            Tag this product so it appears under the right category filters.
+          </p>
+          {categoryFilters.map((filter) => (
+            <section key={filter.id} className="space-y-2">
+              <h3 className="text-sm font-medium">{filter.name}</h3>
+              <div className="flex flex-wrap gap-2">
+                {filter.options.map((option) => {
+                  const selected = filterOptionIds.includes(option.id)
+                  return (
+                    <Button
+                      key={option.id}
+                      type="button"
+                      size="sm"
+                      variant={selected ? 'default' : 'outline'}
+                      aria-pressed={selected}
+                      className={'rounded-full' /* unslop-ignore: pill chips, P7 */}
+                      onClick={() => toggleFilterOption(option.id, !selected)}
+                    >
+                      {option.value}
+                    </Button>
+                  )
+                })}
+              </div>
+            </section>
           ))}
         </div>
       </SubScreen>

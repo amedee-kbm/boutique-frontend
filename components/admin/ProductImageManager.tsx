@@ -9,25 +9,41 @@ import { toast } from 'sonner'
 import {
   deleteProductImage,
   reorderProductImages,
+  setProductImageOption,
   updateProductImageAlt,
   uploadProductImage,
 } from '@/lib/actions/products'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { SortableImageGrid } from '@/components/admin/ui/SortableImageGrid'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface ProductImage {
   id: string
   url: string
   alt: string | null
+  optionId: string | null
+}
+
+interface ColorOption {
+  id: string
+  value: string
+  hex: string | null
 }
 
 export function ProductImageManager({
   productId,
   initialImages,
+  colorOptions,
 }: {
   productId: string
   initialImages: ProductImage[]
+  colorOptions: ColorOption[]
 }) {
   const router = useRouter()
   // Seeded from server props; the parent remounts this component (via key) after
@@ -48,7 +64,10 @@ export function ProductImageManager({
             continue
           }
           // Optimistic: id unknown until refresh, use url as temp key replaced on reload
-          setImages((prev) => [...prev, { id: `temp-${result.url}`, url: result.url!, alt: null }])
+          setImages((prev) => [
+            ...prev,
+            { id: `temp-${result.url}`, url: result.url!, alt: null, optionId: null },
+          ])
         }
         toast.success('Images uploaded')
         router.refresh()
@@ -76,6 +95,18 @@ export function ProductImageManager({
     startUpload(async () => {
       const result = await updateProductImageAlt(id, alt)
       if (result.error) toast.error(result.error)
+    })
+  }
+
+  function handleSetOption(id: string, optionId: string | null) {
+    const previous = images
+    setImages((prev) => prev.map((img) => (img.id === id ? { ...img, optionId } : img)))
+    startUpload(async () => {
+      const result = await setProductImageOption(id, optionId)
+      if (result.error) {
+        toast.error(result.error)
+        setImages(previous)
+      }
     })
   }
 
@@ -120,19 +151,65 @@ export function ProductImageManager({
           onRemove={handleDelete}
           renderFooter={(image) => {
             const isTemp = image.id.startsWith('temp-')
+            const option = colorOptions.find((o) => o.id === image.optionId) ?? null
             return (
-              <Input
-                defaultValue={image.alt ?? ''}
-                disabled={isTemp}
-                placeholder="Alt text (optional)"
-                aria-label="Image alt text"
-                className="h-7 text-xs"
-                onBlur={(e) => {
-                  if (isTemp) return
-                  if (e.target.value.trim() !== (image.alt ?? ''))
-                    handleAltSave(image.id, e.target.value)
-                }}
-              />
+              <div className="space-y-1.5">
+                <Input
+                  defaultValue={image.alt ?? ''}
+                  disabled={isTemp}
+                  placeholder="Alt text (optional)"
+                  aria-label="Image alt text"
+                  className="h-7 text-xs"
+                  onBlur={(e) => {
+                    if (isTemp) return
+                    if (e.target.value.trim() !== (image.alt ?? ''))
+                      handleAltSave(image.id, e.target.value)
+                  }}
+                />
+                {colorOptions.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      disabled={isTemp}
+                      render={
+                        <button
+                          type="button"
+                          aria-label="Assign colour"
+                          className="hover:bg-muted/50 flex h-7 w-full items-center gap-1.5 rounded-md border px-2 text-xs disabled:opacity-50"
+                        >
+                          {option ? (
+                            <>
+                              <span
+                                className="size-3 shrink-0 rounded-full border"
+                                style={{ backgroundColor: option.hex ?? 'transparent' }}
+                              />
+                              {option.value}
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">No colour</span>
+                          )}
+                        </button>
+                      }
+                    />
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={() => handleSetOption(image.id, null)}>
+                        No colour
+                      </DropdownMenuItem>
+                      {colorOptions.map((o) => (
+                        <DropdownMenuItem
+                          key={o.id}
+                          onClick={() => handleSetOption(image.id, o.id)}
+                        >
+                          <span
+                            className="size-3 shrink-0 rounded-full border"
+                            style={{ backgroundColor: o.hex ?? 'transparent' }}
+                          />
+                          {o.value}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             )
           }}
         />

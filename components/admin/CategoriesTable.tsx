@@ -15,12 +15,14 @@ import {
 } from '@/components/ui/table'
 import { CategoryDialog } from '@/components/admin/CategoryDialog'
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog'
+import type { CategoryFilter } from '@/lib/db/queries'
 
 interface Category {
   id: string
   name: string
   slug: string
   productCount: number
+  filters: CategoryFilter[]
 }
 
 export function CategoriesTable({ categories }: { categories: Category[] }) {
@@ -57,6 +59,7 @@ export function CategoriesTable({ categories }: { categories: Category[] }) {
                 <div className="flex justify-end gap-1">
                   <CategoryDialog
                     category={category}
+                    filters={category.filters}
                     trigger={
                       <Button
                         variant="ghost"
