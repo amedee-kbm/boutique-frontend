@@ -1,27 +1,40 @@
 import { test, expect } from '@playwright/test'
 
-// Full inquiry funnel: build a selection → "Ask about these" → anonymous sign-in
-// → one multi-card message lands in the guest thread. Requires Anonymous
-// sign-ins enabled in the Supabase project (Auth → Providers → Anonymous).
-test('customer sends an inquiry and sees it in the chat thread', async ({ page }) => {
+// Full order funnel: build a bag → "Place order" → fill contact + delivery
+// details → anonymous sign-in writes the order. Requires Anonymous sign-ins
+// enabled in the Supabase project (Auth → Providers → Anonymous).
+test('customer places a no-pay order from their bag', async ({ page }) => {
   await page.goto('/')
 
   const firstProduct = page.locator('a[href^="/product/"]').first()
   await expect(firstProduct).toBeVisible({ timeout: 30000 })
   await firstProduct.click()
 
-  const sizeHeading = page.getByText('Size', { exact: true })
-  if (await sizeHeading.isVisible().catch(() => false)) {
-    await page.locator('button[aria-pressed]').first().click()
+  await page.getByRole('button', { name: 'Add to bag' }).click()
+
+  // Sizes are hidden until "Add to bag" opens the size-picker sheet.
+  const sizePicker = page.getByText('Select a size', { exact: true })
+  if (await sizePicker.isVisible().catch(() => false)) {
+    await page.locator('[data-slot="sheet-content"] button').first().click()
   }
-  await page.getByRole('button', { name: 'Add to selection' }).click()
 
-  await page.goto('/selection')
+  await page.goto('/bag')
+  await page.getByRole('button', { name: /place order/i }).click()
+
   await page.getByLabel('Your name').fill('E2E Guest')
-  await page.getByRole('button', { name: /ask about these/i }).click()
+  await page.getByLabel('Phone number').fill('+250788000000')
+  await page.getByLabel('Delivery address').fill('KN 5 Rd, Kigali')
+  await page.getByRole('button', { name: /confirm order/i }).click()
 
-  await expect(page).toHaveURL(/\/chat/, { timeout: 20000 })
-  await expect(page.getByText("I'd love to know more")).toBeVisible()
-  // The inquiry renders its product card(s).
-  await expect(page.getByRole('link', { name: /view/i }).first()).toBeVisible()
+  await expect(page.getByText('Order placed.')).toBeVisible({ timeout: 20000 })
+})
+
+// A guest can also start a plain chat with no bag — just a name.
+test('customer starts a chat with no bag', async ({ page }) => {
+  await page.goto('/chat')
+
+  await page.getByLabel('Your name').fill('E2E Chatter')
+  await page.getByRole('button', { name: /start chatting/i }).click()
+
+  await expect(page.getByPlaceholder('Type a message…')).toBeVisible({ timeout: 20000 })
 })

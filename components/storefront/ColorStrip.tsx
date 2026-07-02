@@ -41,7 +41,7 @@ export function ColorStrip({
                 className={cn(
                   'size-6 shrink-0',
                   active
-                    ? 'ring-foreground ring-2 ring-offset-2'
+                    ? 'ring-foreground ring-1 ring-offset-2'
                     : 'ring-1 ring-black/15 ring-inset'
                 )}
                 style={{ backgroundColor: colour.hex ?? 'transparent' }}

@@ -78,8 +78,8 @@ test('admin can add details and a photo in one go, and the photo persists', asyn
   await expect(page).toHaveURL(/\/admin\/products\/.+\/edit/, { timeout: 20000 })
   await expect(page.getByLabel('Product title')).toHaveValue(name)
 
-  // The photo persisted: the edit page's image manager renders its alt-text field.
-  await expect(page.getByLabel('Image alt text')).toBeVisible({ timeout: 20000 })
+  // The photo persisted: the edit page's image manager renders it with a remove control.
+  await expect(page.getByRole('button', { name: 'Remove image' })).toBeVisible({ timeout: 20000 })
 
   await deleteProduct(page, name)
 })

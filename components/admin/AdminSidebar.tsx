@@ -2,20 +2,23 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, MessageCircle, Package, Tag } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Package, ShoppingBag, Tag } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { LogoutButton } from '@/components/logout-button'
 import { ThemeToggle } from '@/components/admin/ThemeToggle'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
-  { href: '/admin/chat', label: 'Chat', icon: MessageCircle },
+  { href: '/admin/chat', label: 'Chat', icon: MessageSquare },
 ]
+
+const sidebarActionClasses =
+  'flex h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
 
 interface AdminSidebarProps {
   userEmail: string
@@ -28,41 +31,52 @@ export function AdminSidebar({ userEmail }: AdminSidebarProps) {
     exact ? pathname === href : pathname.startsWith(href)
 
   return (
-    <aside className="bg-background fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r md:flex">
-      <div className="flex h-14 items-center border-b px-4">
-        <span className="text-lg font-bold">Zita Boutique</span>
+    <aside className="bg-background fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r md:flex">
+      {/* Logo */}
+      <div className="flex h-16 items-center border-b px-6">
+        <span className="text-lg font-semibold tracking-tight">Zita Boutique</span>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 p-4">
         {navItems.map(({ href, label, icon: Icon, exact }) => (
           <Link
             key={href}
             href={href}
             className={cn(
-              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+              sidebarActionClasses,
               isActive(href, exact)
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
           >
             <Icon className="size-4 shrink-0" />
-            {label}
+            <span>{label}</span>
           </Link>
         ))}
       </nav>
 
-      <div className="p-3">
-        <Separator className="mb-3" />
-        <div className="mb-2 flex items-center gap-2 px-3 py-1">
-          <Avatar className="size-7">
-            <AvatarFallback className="text-xs">
-              {userEmail.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-muted-foreground truncate text-xs">{userEmail}</span>
+      {/* Account */}
+      <div className="border-t p-4">
+        <div className="bg-muted/40 mb-4 rounded-lg border p-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-9">
+              <AvatarFallback className="text-xs font-medium">
+                {userEmail.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Administrator</p>
+              <p className="text-muted-foreground truncate text-xs">{userEmail}</p>
+            </div>
+          </div>
         </div>
-        <ThemeToggle />
-        <LogoutButton />
+
+        <div>
+          <ThemeToggle className={sidebarActionClasses} />
+          <LogoutButton className={sidebarActionClasses} />
+        </div>
       </div>
     </aside>
   )

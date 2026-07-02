@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MessageCircle, Package, Plus, Tag } from 'lucide-react'
+import { MessageCircle, Package, Plus, ShoppingBag, Tag } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 import { getDashboardStats, getRecentProducts } from '@/lib/db/queries'
@@ -14,6 +14,7 @@ export default async function DashboardPage() {
   const [stats, recent] = await Promise.all([getDashboardStats(), getRecentProducts()])
 
   const cards = [
+    { label: 'New orders', value: stats.newOrderCount, icon: ShoppingBag, href: '/admin/orders' },
     { label: 'Products', value: stats.productCount, icon: Package, href: '/admin/products' },
     { label: 'Categories', value: stats.categoryCount, icon: Tag, href: '/admin/categories' },
     { label: 'Chats', value: stats.chatCount, icon: MessageCircle, href: '/admin/chat' },
@@ -32,7 +33,7 @@ export default async function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {cards.map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href}>
             <Card className="hover:bg-muted/50 transition-colors">

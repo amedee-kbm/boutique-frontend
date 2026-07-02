@@ -1,35 +1,71 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import type { SelectionItem } from '@/lib/selection/useSelection'
+import type { BagItem } from '@/lib/bag/useBag'
 import { getGuestSession, setGuestSession } from '@/lib/chat/guest'
 
 const OPENING_MESSAGE = "Hi! I'd love to know more about these pieces."
 
+// Guests sign in anonymously so their inserts carry an auth.uid() the RLS
+// "manage own" policies key off. Reused by the chat and order funnels.
+export async function ensureAnonUser(supabase: ReturnType<typeof createClient>) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user) return user
+
+  const { data, error } = await supabase.auth.signInAnonymously()
+  if (error || !data.user) return null
+  return data.user
+}
+
+// Starts (or reuses) a plain chat session for a guest who just wants to ask a
+// question — no items. Anonymous sign-in → find/create their session. Returns
+// the session id, or an error string.
+export async function startGuestChat({
+  name,
+}: {
+  name: string
+}): Promise<{ sessionId: string | null; error: string | null }> {
+  const supabase = createClient()
+
+  const user = await ensureAnonUser(supabase)
+  if (!user) return { sessionId: null, error: 'Could not start a chat. Please try again.' }
+
+  const existing = getGuestSession()?.sessionId ?? null
+  if (existing) {
+    setGuestSession(existing, name)
+    return { sessionId: existing, error: null }
+  }
+
+  const { data, error } = await supabase
+    .from('chat_sessions')
+    .insert({ guest_name: name, created_by: user.id })
+    .select('id')
+    .single()
+  if (error || !data) return { sessionId: null, error: 'Could not start a chat.' }
+
+  const sessionId = data.id as string
+  setGuestSession(sessionId, name)
+  return { sessionId, error: null }
+}
+
 // Drives the inquiry funnel from the browser (RLS-guarded): anonymous sign-in →
 // find/create the guest's single ongoing session → one message + its product
 // cards. Returns the session id, or an error string.
-export async function sendSelectionInquiry({
+export async function sendBagInquiry({
   items,
   name,
 }: {
-  items: SelectionItem[]
+  items: BagItem[]
   name: string
 }): Promise<{ sessionId: string | null; error: string | null }> {
-  if (items.length === 0) return { sessionId: null, error: 'Your selection is empty' }
+  if (items.length === 0) return { sessionId: null, error: 'Your bag is empty' }
 
   const supabase = createClient()
 
-  let {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    const { data, error } = await supabase.auth.signInAnonymously()
-    if (error || !data.user) {
-      return { sessionId: null, error: 'Could not start a chat. Please try again.' }
-    }
-    user = data.user
-  }
+  const user = await ensureAnonUser(supabase)
+  if (!user) return { sessionId: null, error: 'Could not start a chat. Please try again.' }
 
   let sessionId = getGuestSession()?.sessionId ?? null
 

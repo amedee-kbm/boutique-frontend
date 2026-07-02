@@ -36,6 +36,34 @@
       "when": 1782479967569,
       "tag": "0004_silent_groot",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782761494202,
+      "tag": "0005_thin_quicksilver",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782788887513,
+      "tag": "0006_smart_morgan_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782802903199,
+      "tag": "0007_sturdy_preak",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782804346962,
+      "tag": "0008_overjoyed_rage",
+      "breakpoints": true
     }
   ]
 }

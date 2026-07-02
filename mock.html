@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zita Boutique — states & edges mock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Figtree:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --background: oklch(1 0 0);
+        --foreground: oklch(0.145 0 0);
+        --muted: oklch(0.97 0 0);
+        --muted-foreground: oklch(0.556 0 0);
+        --primary: oklch(0.205 0 0);
+        --primary-foreground: oklch(0.985 0 0);
+        --border: oklch(0.922 0 0);
+        --radius: 0.625rem;
+        --font-heading: 'Bricolage Grotesque', system-ui, sans-serif;
+        --font-sans: 'Figtree', system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: var(--font-sans); background: oklch(0.94 0 0); color: var(--foreground); -webkit-font-smoothing: antialiased; padding: 40px 24px 80px; }
+      .page-title { font-family: var(--font-heading); font-weight: 600; font-size: 22px; letter-spacing: -0.01em; margin-bottom: 4px; }
+      .page-sub { color: oklch(0.4 0 0); font-size: 14px; margin-bottom: 32px; max-width: 78ch; line-height: 1.55; }
+      .frames { display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start; }
+      .frame-label { font-family: var(--font-heading); font-weight: 500; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.07em; color: oklch(0.4 0 0); margin-bottom: 12px; }
+      .phone { width: 360px; height: 740px; background: var(--background); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+      .scroll { flex: 1; overflow-y: auto; scrollbar-width: none; }
+      .scroll::-webkit-scrollbar { display: none; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+      .topbar-icon { width: 22px; height: 22px; display: grid; place-items: center; color: var(--foreground); position: relative; }
+      .htitle { font-family: var(--font-heading); font-weight: 600; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+      /* empty state */
+      .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 36px; gap: 14px; }
+      .empty .ic { width: 56px; height: 56px; border: 1px solid var(--border); border-radius: 999px; display: grid; place-items: center; color: var(--muted-foreground); }
+      .empty .ic svg { width: 26px; height: 26px; }
+      .empty .et { font-family: var(--font-heading); font-weight: 600; font-size: 17px; }
+      .empty .es { font-size: 13.5px; color: var(--muted-foreground); line-height: 1.55; }
+      .empty .eb { margin-top: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--primary-foreground); background: var(--primary); border: none; padding: 13px 22px; cursor: pointer; }
+      .empty .eb.ghost { background: transparent; color: var(--foreground); border: 1px solid var(--border); }
+
+      /* tab bar with unread */
+      .tabbar { display: flex; justify-content: space-around; align-items: center; padding: 10px 0 14px; border-top: 1px solid var(--border); }
+      .tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground); min-width: 52px; position: relative; }
+      .tab.active { color: var(--foreground); }
+      .tab svg { width: 20px; height: 20px; }
+      .unread { position: absolute; top: -3px; right: 8px; width: 8px; height: 8px; border-radius: 999px; background: oklch(0.55 0.18 25); border: 1.5px solid var(--background); }
+
+      /* chat */
+      .thread { padding: 16px; display: flex; flex-direction: column; gap: 11px; }
+      .stamp { text-align: center; font-size: 11px; color: var(--muted-foreground); margin: 2px 0; }
+      .msg-cards { align-self: flex-end; width: 84%; display: flex; flex-direction: column; gap: 6px; }
+      .pc-card { display: flex; gap: 10px; align-items: center; padding: 7px; border: 1px solid var(--border); }
+      .pc-card img { width: 38px; height: 48px; object-fit: cover; flex: 0 0 auto; }
+      .pc-name { font-family: var(--font-heading); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+      .pc-meta { font-size: 11px; color: var(--muted-foreground); margin-top: 3px; }
+      .pc-price { font-size: 11.5px; font-weight: 600; margin-left: auto; white-space: nowrap; }
+      .pc-card.gone { opacity: 0.55; }
+      .pc-gone { margin-left: auto; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: oklch(0.55 0.18 25); }
+      .bubble { max-width: 80%; padding: 9px 12px; font-size: 13.5px; line-height: 1.45; border-radius: 15px; }
+      .from-seller { align-self: flex-start; background: var(--muted); border-bottom-left-radius: 5px; }
+      .from-me { align-self: flex-end; background: var(--primary); color: var(--primary-foreground); border-bottom-right-radius: 5px; }
+      .composer { display: flex; gap: 8px; padding: 10px 12px 14px; border-top: 1px solid var(--border); }
+      .composer input { flex: 1; font-size: 13.5px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 999px; }
+      .send { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); border: none; display: grid; place-items: center; }
+      .send svg { width: 16px; height: 16px; }
+
+      /* product detail (no variants) */
+      .pd-media { width: 100%; aspect-ratio: 3 / 4; overflow: hidden; background: var(--muted); }
+      .pd-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .pd-info { padding: 18px 16px; }
+      .pd-name { font-family: var(--font-heading); font-weight: 500; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; }
+      .pd-price { font-size: 14px; font-weight: 500; margin-top: 7px; }
+      .pd-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-foreground); margin: 20px 0 9px; }
+      .pd-desc { font-size: 13.5px; line-height: 1.6; color: oklch(0.32 0 0); }
+      .pd-cta { display: flex; align-items: center; gap: 12px; padding: 11px 14px 15px; border-top: 1px solid var(--border); }
+      .cta-price { font-size: 13.5px; font-weight: 600; }
+      .ask-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 13.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--primary-foreground); background: var(--primary); border: none; padding: 13px; }
+      .ask-btn svg { width: 15px; height: 15px; }
+
+      /* admin (rounded) */
+      .adm .topbar { background: oklch(0.985 0 0); }
+      .adm-name { font-family: var(--font-heading); font-weight: 600; font-size: 14px; }
+      .adm-sub { font-size: 11px; color: var(--muted-foreground); }
+      .adm .thread { background: oklch(0.985 0 0); }
+      .adm .pc-card { border-radius: 8px; background: var(--background); }
+      .adm .from-me { border-radius: 15px 15px 5px 15px; }
+      .adm .from-seller { border-radius: 15px 15px 15px 5px; }
+    </style>
+  </head>
+  <body>
+    <div class="page-title">Zita Boutique — Issues 4 &amp; 5: chat &amp; edge states</div>
+    <div class="page-sub">
+      The states that need a visual: chat empty, chat active (note the <b>unread dot</b> on the Chat
+      tab in the active frame's bar), the admin inquiry view rendering the multi-card message, a product
+      with <b>no variants</b>, an <b>empty selection</b>, an <b>empty filtered category</b>, and a stale
+      product that's <b>no longer available</b> inside a chat card.
+    </div>
+
+    <div class="frames">
+      <!-- A · CHAT EMPTY -->
+      <div>
+        <div class="frame-label">A · Chat — empty</div>
+        <div class="phone">
+          <div class="topbar"><div style="width:22px"></div><div class="htitle">Chat</div><div style="width:22px"></div></div>
+          <div class="empty">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>
+            <div class="et">No messages yet</div>
+            <div class="es">Find something you like and tap <b>Ask to buy</b> — your chat with Zita starts here.</div>
+            <button class="eb">Browse pieces</button>
+          </div>
+          <div class="tabbar">
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>Home</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Shop</div>
+            <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Chat</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B · CHAT ACTIVE + unread on tab -->
+      <div>
+        <div class="frame-label">B · Chat — active (+ unread dot)</div>
+        <div class="phone">
+          <div class="topbar">
+            <div class="topbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div><div class="adm-name">Zita Boutique</div><div class="adm-sub" style="display:flex;gap:5px;align-items:center"><span style="width:6px;height:6px;border-radius:9px;background:oklch(0.6 0.13 150)"></span> Usually replies within an hour</div></div>
+            <div style="width:22px"></div>
+          </div>
+          <div class="scroll">
+            <div class="thread">
+              <div class="stamp">Today</div>
+              <div class="msg-cards">
+                <div class="pc-card"><img src="https://picsum.photos/seed/za1b/120/150"/><div><div class="pc-name">Floral Wrap Dress</div><div class="pc-meta">Rust · M</div></div><div class="pc-price">RWF 12,000</div></div>
+                <div class="pc-card"><img src="https://picsum.photos/seed/za2/120/150"/><div><div class="pc-name">Linen Shirt</div><div class="pc-meta">Sage · L</div></div><div class="pc-price">RWF 6,500</div></div>
+              </div>
+              <div class="bubble from-me">Hi! Are these available?</div>
+              <div class="bubble from-seller">Hi Aline! 😊 Yes — both in stock. Free delivery in Kigali.</div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>Home</div>
+            <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Shop</div>
+            <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Chat<span class="unread"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C · ADMIN INQUIRY -->
+      <div>
+        <div class="frame-label">C · Admin — inquiry (multi-card)</div>
+        <div class="phone adm">
+          <div class="topbar">
+            <div class="topbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div><div class="adm-name">Aline</div><div class="adm-sub">Asking about 2 pieces · 5m ago</div></div>
+            <div style="width:22px"></div>
+          </div>
+          <div class="scroll">
+            <div class="thread">
+              <div class="stamp">Today</div>
+              <div class="msg-cards" style="align-self:flex-start">
+                <div class="pc-card"><img src="https://picsum.photos/seed/za1b/120/150"/><div><div class="pc-name">Floral Wrap Dress</div><div class="pc-meta">Rust · M</div></div><div class="pc-price">RWF 12,000</div></div>
+                <div class="pc-card"><img src="https://picsum.photos/seed/za2/120/150"/><div><div class="pc-name">Linen Shirt</div><div class="pc-meta">Sage · L</div></div><div class="pc-price">RWF 6,500</div></div>
+              </div>
+              <div class="bubble from-seller">Hi! Are these available?</div>
+              <div class="bubble from-me">Yes — both in stock. Free delivery in Kigali.</div>
+            </div>
+          </div>
+          <div class="composer"><input placeholder="Reply to Aline…"/><button class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button></div>
+        </div>
+      </div>
+
+      <!-- D · DETAIL NO VARIANTS -->
+      <div>
+        <div class="frame-label">D · Detail — no variants</div>
+        <div class="phone">
+          <div class="topbar"><div class="topbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div><div style="width:22px"></div></div>
+          <div class="scroll">
+            <div class="pd-media"><img src="https://picsum.photos/seed/zb6/900/1200"/></div>
+            <div class="pd-info">
+              <div class="pd-name">Woven Straw Bag</div>
+              <div class="pd-price">RWF 5,000</div>
+              <div class="pd-label">Description</div>
+              <div class="pd-desc">Handwoven straw tote with leather handles. One size. No colour or size options on this piece — so the page stays simple.</div>
+            </div>
+          </div>
+          <div class="pd-cta"><div class="cta-price">RWF 5,000</div><button class="ask-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>Add to selection</button></div>
+        </div>
+      </div>
+
+      <!-- E · SELECTION EMPTY -->
+      <div>
+        <div class="frame-label">E · Selection — empty</div>
+        <div class="phone">
+          <div class="topbar"><div class="topbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></div><div class="htitle">Selection</div><div style="width:22px"></div></div>
+          <div class="empty">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+            <div class="et">Your selection is empty</div>
+            <div class="es">Add pieces you like, then ask the seller about them all in one message.</div>
+            <button class="eb ghost">Start browsing</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- F · EMPTY FILTERED CATEGORY -->
+      <div>
+        <div class="frame-label">F · Category — no matches</div>
+        <div class="phone">
+          <div class="topbar"><div class="topbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></div><div class="htitle">Dresses</div><div style="width:22px"></div></div>
+          <div class="empty">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg></div>
+            <div class="et">No pieces match these filters</div>
+            <div class="es">Try fewer filters — Midi · Party · Under 5k is a tight combination.</div>
+            <button class="eb">Clear all filters</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- G · STALE / UNAVAILABLE -->
+      <div>
+        <div class="frame-label">G · Chat card — no longer available</div>
+        <div class="phone">
+          <div class="topbar">
+            <div class="topbar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></div>
+            <div><div class="adm-name">Zita Boutique</div><div class="adm-sub">Usually replies within an hour</div></div>
+            <div style="width:22px"></div>
+          </div>
+          <div class="scroll">
+            <div class="thread">
+              <div class="stamp">Last week</div>
+              <div class="msg-cards">
+                <div class="pc-card gone"><img src="https://picsum.photos/seed/za9/120/150"/><div><div class="pc-name">Ribbed Knit Top</div><div class="pc-meta">Cream · S</div></div><div class="pc-gone">No longer<br/>available</div></div>
+                <div class="pc-card"><img src="https://picsum.photos/seed/za2/120/150"/><div><div class="pc-name">Linen Shirt</div><div class="pc-meta">Sage · L</div></div><div class="pc-price">RWF 6,500</div></div>
+              </div>
+              <div class="bubble from-me">Are these still around?</div>
+              <div class="bubble from-seller">The linen shirt yes! The knit top just sold, sorry 🙈</div>
+            </div>
+          </div>
+          <div class="composer"><input placeholder="Message…"/><button class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

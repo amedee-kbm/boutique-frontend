@@ -9,7 +9,6 @@ vi.mock('@/lib/actions/products', () => ({
   deleteProductImage: vi.fn(),
   reorderProductImages: vi.fn(),
   setProductImageOption: vi.fn(),
-  updateProductImageAlt: vi.fn(),
   uploadProductImage: vi.fn(),
 }))
 
@@ -18,7 +17,6 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 import {
   deleteProductImage,
   setProductImageOption,
-  updateProductImageAlt,
   uploadProductImage,
 } from '@/lib/actions/products'
 import { toast } from 'sonner'
@@ -41,15 +39,13 @@ beforeEach(() => {
 describe('ProductImageManager', () => {
   it('renders the upload dropzone prompt', () => {
     render(<ProductImageManager productId="p1" initialImages={[]} colorOptions={[]} />)
-    expect(screen.getByText(/drag photos here/i)).toBeInTheDocument()
+    expect(screen.getByText('Add images')).toBeInTheDocument()
   })
 
-  it('renders the existing images with their alt text', () => {
+  it('renders the existing images', () => {
     render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
     expect(screen.getByAltText('Front')).toBeInTheDocument()
-    const altInputs = screen.getAllByLabelText('Image alt text')
-    expect(altInputs).toHaveLength(2)
-    expect(altInputs[0]).toHaveValue('Front')
+    expect(screen.getAllByRole('button', { name: /remove image/i })).toHaveLength(2)
   })
 
   it('uploads a dropped file and refreshes', async () => {
@@ -92,30 +88,6 @@ describe('ProductImageManager', () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Boom'))
     expect(screen.getByAltText('Front')).toBeInTheDocument()
-  })
-
-  it('saves alt text when the field loses focus and the value changed', async () => {
-    vi.mocked(updateProductImageAlt).mockResolvedValue({ error: null })
-    const user = userEvent.setup()
-    render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
-
-    const altInput = screen.getAllByLabelText('Image alt text')[0]
-    await user.clear(altInput)
-    await user.type(altInput, 'Back view')
-    await user.tab()
-
-    await waitFor(() => expect(updateProductImageAlt).toHaveBeenCalledWith('img1', 'Back view'))
-  })
-
-  it('does not save alt text when the value is unchanged', async () => {
-    const user = userEvent.setup()
-    render(<ProductImageManager productId="p1" initialImages={images} colorOptions={[]} />)
-
-    const altInput = screen.getAllByLabelText('Image alt text')[0]
-    await user.click(altInput)
-    await user.tab()
-
-    expect(updateProductImageAlt).not.toHaveBeenCalled()
   })
 
   it('assigns a colour option to an image', async () => {

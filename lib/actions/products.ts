@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { productImages, products } from '@/lib/db/schema'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { productFormSchema } from '@/lib/actions/products.schema'
+import { sendChatPush } from '@/lib/push/send'
 
 function slugify(str: string): string {
   return str
@@ -144,24 +145,6 @@ export async function uploadProductImage(productId: string, formData: FormData, 
   return { error: null, url: publicUrl }
 }
 
-export async function updateProductImageAlt(imageId: string, alt: string) {
-  const rows = await db
-    .select({ productId: productImages.productId })
-    .from(productImages)
-    .where(eq(productImages.id, imageId))
-    .limit(1)
-
-  if (!rows[0]) return { error: 'Image not found' }
-
-  await db
-    .update(productImages)
-    .set({ alt: alt.trim() || null })
-    .where(eq(productImages.id, imageId))
-
-  revalidatePath(`/admin/products/${rows[0].productId}/edit`)
-  return { error: null }
-}
-
 export async function setProductImageOption(imageId: string, optionId: string | null) {
   const rows = await db
     .select({ productId: productImages.productId })
@@ -221,6 +204,38 @@ export async function reorderProductImages(orderedIds: string[]) {
   }
 }
 
+export async function bulkUpdateProducts(
+  updates: {
+    id: string
+    slug: string
+    name: string
+    price: string
+    categoryId: string | null
+    visible: boolean
+  }[]
+) {
+  if (updates.length === 0) return { error: null }
+
+  const trimmed = updates.map((u) => ({ ...u, name: u.name.trim() }))
+  const invalid = trimmed.find((u) => !u.name || !u.price || isNaN(Number(u.price)))
+  if (invalid) return { error: `"${invalid.name || 'A product'}" has an invalid name or price.` }
+
+  try {
+    await Promise.all(
+      trimmed.map(({ id, slug, name, price, categoryId, visible }) =>
+        db
+          .update(products)
+          .set({ name, slug, price, categoryId, visible, updatedAt: new Date() })
+          .where(eq(products.id, id))
+      )
+    )
+    revalidatePath('/admin/products')
+    return { error: null }
+  } catch {
+    return { error: 'Failed to save changes.' }
+  }
+}
+
 export async function sendAdminMessage(sessionId: string, content: string) {
   const trimmed = content.trim()
   if (!trimmed) return { error: 'Message is empty', message: null }
@@ -238,6 +253,13 @@ export async function sendAdminMessage(sessionId: string, content: string) {
     .from('chat_sessions')
     .update({ last_message_at: new Date().toISOString() })
     .eq('id', sessionId)
+
+  // Best-effort push so the customer learns of the reply after leaving the tab.
+  try {
+    await sendChatPush(sessionId, trimmed)
+  } catch {
+    // A push failure must never fail the reply.
+  }
 
   // Refresh the inbox preview/order and this conversation after the reply.
   revalidatePath('/admin/chat')

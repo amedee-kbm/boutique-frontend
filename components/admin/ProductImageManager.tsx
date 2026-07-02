@@ -3,18 +3,16 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
-import { ImagePlus, Loader2 } from 'lucide-react'
+import { ImagePlus, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
   deleteProductImage,
   reorderProductImages,
   setProductImageOption,
-  updateProductImageAlt,
   uploadProductImage,
 } from '@/lib/actions/products'
 import { cn } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
 import { SortableImageGrid } from '@/components/admin/ui/SortableImageGrid'
 import {
   DropdownMenu,
@@ -88,16 +86,6 @@ export function ProductImageManager({
     })
   }
 
-  function handleAltSave(id: string, alt: string) {
-    setImages((prev) =>
-      prev.map((img) => (img.id === id ? { ...img, alt: alt.trim() || null } : img))
-    )
-    startUpload(async () => {
-      const result = await updateProductImageAlt(id, alt)
-      if (result.error) toast.error(result.error)
-    })
-  }
-
   function handleSetOption(id: string, optionId: string | null) {
     const previous = images
     setImages((prev) => prev.map((img) => (img.id === id ? { ...img, optionId } : img)))
@@ -123,12 +111,12 @@ export function ProductImageManager({
     }
   }
 
-  return (
-    <div className="space-y-4">
+  if (images.length === 0) {
+    return (
       <div
         {...getRootProps()}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+          'flex aspect-[3/2] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-center transition-colors',
           isDragActive ? 'border-ring bg-muted/50' : 'border-input hover:bg-muted/30'
         )}
       >
@@ -139,87 +127,90 @@ export function ProductImageManager({
           <ImagePlus className="text-muted-foreground size-6" />
         )}
         <p className="text-sm font-medium">
-          {isDragActive ? 'Drop the photos here' : 'Drag photos here, or tap to choose'}
+          {isDragActive ? 'Drop the photos here' : 'Add images'}
         </p>
-        <p className="text-muted-foreground text-xs">PNG or JPG, multiple allowed</p>
-      </div>
-
-      {images.length > 0 && (
-        <SortableImageGrid
-          images={images}
-          onReorder={handleReorder}
-          onRemove={handleDelete}
-          renderFooter={(image) => {
-            const isTemp = image.id.startsWith('temp-')
-            const option = colorOptions.find((o) => o.id === image.optionId) ?? null
-            return (
-              <div className="space-y-1.5">
-                <Input
-                  defaultValue={image.alt ?? ''}
-                  disabled={isTemp}
-                  placeholder="Alt text (optional)"
-                  aria-label="Image alt text"
-                  className="h-7 text-xs"
-                  onBlur={(e) => {
-                    if (isTemp) return
-                    if (e.target.value.trim() !== (image.alt ?? ''))
-                      handleAltSave(image.id, e.target.value)
-                  }}
-                />
-                {colorOptions.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      disabled={isTemp}
-                      render={
-                        <button
-                          type="button"
-                          aria-label="Assign colour"
-                          className="hover:bg-muted/50 flex h-7 w-full items-center gap-1.5 rounded-md border px-2 text-xs disabled:opacity-50"
-                        >
-                          {option ? (
-                            <>
-                              <span
-                                className="size-3 shrink-0 rounded-full border"
-                                style={{ backgroundColor: option.hex ?? 'transparent' }}
-                              />
-                              {option.value}
-                            </>
-                          ) : (
-                            <span className="text-muted-foreground">No colour</span>
-                          )}
-                        </button>
-                      }
-                    />
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => handleSetOption(image.id, null)}>
-                        No colour
-                      </DropdownMenuItem>
-                      {colorOptions.map((o) => (
-                        <DropdownMenuItem
-                          key={o.id}
-                          onClick={() => handleSetOption(image.id, o.id)}
-                        >
-                          <span
-                            className="size-3 shrink-0 rounded-full border"
-                            style={{ backgroundColor: o.hex ?? 'transparent' }}
-                          />
-                          {o.value}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-            )
-          }}
-        />
-      )}
-
-      {images.length > 0 && (
         <p className="text-muted-foreground text-xs">
-          The first image is the main photo. Drag to reorder.
+          PNG or JPG · the first photo is the main one
         </p>
+      </div>
+    )
+  }
+
+  const addTile = (
+    <div
+      {...getRootProps()}
+      className={cn(
+        'flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed text-center transition-colors',
+        isDragActive ? 'border-ring bg-muted/50' : 'border-input hover:bg-muted/30'
       )}
+    >
+      <input {...getInputProps()} />
+      {isUploading ? (
+        <Loader2 className="text-muted-foreground size-5 animate-spin" />
+      ) : (
+        <Plus className="text-muted-foreground size-5" />
+      )}
+      <span className="text-muted-foreground text-xs">Add</span>
     </div>
+  )
+
+  return (
+    <SortableImageGrid
+      images={images}
+      onReorder={handleReorder}
+      onRemove={handleDelete}
+      addTile={addTile}
+      renderOverlay={
+        colorOptions.length > 0
+          ? (image) => {
+              const isTemp = image.id.startsWith('temp-')
+              const option = colorOptions.find((o) => o.id === image.optionId) ?? null
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    disabled={isTemp}
+                    render={
+                      <button
+                        type="button"
+                        aria-label="Assign colour"
+                        className="bg-background/80 text-foreground flex h-7 max-w-[10rem] items-center gap-1.5 rounded-md px-2 text-xs backdrop-blur-sm disabled:opacity-50"
+                      >
+                        {option ? (
+                          <>
+                            <span
+                              className="size-3 shrink-0 rounded-full border"
+                              style={{ backgroundColor: option.hex ?? 'transparent' }}
+                            />
+                            <span className="truncate">{option.value}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="size-3 shrink-0 rounded-full border border-dashed" />
+                            <span className="text-muted-foreground">Colour</span>
+                          </>
+                        )}
+                      </button>
+                    }
+                  />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleSetOption(image.id, null)}>
+                      No colour
+                    </DropdownMenuItem>
+                    {colorOptions.map((o) => (
+                      <DropdownMenuItem key={o.id} onClick={() => handleSetOption(image.id, o.id)}>
+                        <span
+                          className="size-3 shrink-0 rounded-full border"
+                          style={{ backgroundColor: o.hex ?? 'transparent' }}
+                        />
+                        {o.value}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )
+            }
+          : undefined
+      }
+    />
   )
 }

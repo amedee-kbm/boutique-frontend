@@ -2,6 +2,7 @@ import {
   boolean,
   integer,
   numeric,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -9,6 +10,14 @@ import {
   uuid,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core'
+
+// Allowlist of seller (admin) accounts. Membership here — NOT the
+// is_anonymous=false flag — is what is_admin() checks, so registered customers
+// (also non-anonymous) are never admins. Seed the seller's auth.users id; the
+// cross-schema FK to auth.users and RLS lock live in supabase/policies/rls.sql.
+export const admins = pgTable('admins', {
+  userId: uuid('user_id').primaryKey(),
+})
 
 export const categories = pgTable('categories', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -115,6 +124,68 @@ export const chatMessages = pgTable('chat_messages', {
   fromAdmin: boolean('from_admin').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+// Web push subscriptions for a guest chat session, so the seller's reply can
+// notify the customer after they've left the tab. Written only via the
+// service-role server action; the table is RLS-locked (no public policies).
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id')
+    .references(() => chatSessions.id, { onDelete: 'cascade' })
+    .notNull(),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// No-pay (cash-on-delivery style) order: the customer's selection plus contact
+// and delivery details. The seller works it from the admin Orders inbox and
+// contacts the customer to close — no payment is handled.
+export const orderStatus = pgEnum('order_status', ['new', 'contacted', 'done'])
+
+export const orders = pgTable('orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  guestName: text('guest_name').notNull(),
+  phone: text('phone').notNull(),
+  address: text('address').notNull(),
+  note: text('note'),
+  status: orderStatus('status').notNull().default('new'),
+  createdBy: uuid('created_by'), // auth.uid() of the anonymous guest — used for RLS
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// Snapshot columns let an ordered line still render after the product changes or
+// hides — mirrors chat_message_items.
+export const orderItems = pgTable('order_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orderId: uuid('order_id')
+    .references(() => orders.id, { onDelete: 'cascade' })
+    .notNull(),
+  productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+  position: integer('position').notNull().default(0),
+  nameSnapshot: text('name_snapshot').notNull(),
+  colorValue: text('color_value'),
+  sizeValue: text('size_value'),
+  priceSnapshot: numeric('price_snapshot', { precision: 10, scale: 2 }).notNull(),
+  imageUrlSnapshot: text('image_url_snapshot'),
+})
+
+// A signed-in customer's saved pieces. Guests cannot favorite (the Bag is the
+// guest-allowed shortlist); favoriting requires a customer account, so rows are
+// owner-only via RLS. user_id points at auth.users (cross-schema FK lives in
+// supabase/policies/rls.sql, like orders.created_by).
+export const favorites = pgTable(
+  'favorites',
+  {
+    userId: uuid('user_id').notNull(),
+    productId: uuid('product_id')
+      .references(() => products.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.productId] })]
+)
 
 // A message carrying items is an inquiry: one message renders N product cards.
 // Snapshot columns let a card still render after the product changes or hides.

@@ -1,12 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 
 import { cn } from '@/lib/utils'
 import { useUnread } from '@/lib/chat/useUnread'
-import { SelectionBag } from './SelectionBag'
+import { BagButton } from './BagButton'
 
 const NAV = [
   { href: '/', label: 'Home', match: (p: string) => p === '/' },
@@ -15,29 +14,25 @@ const NAV = [
     label: 'Shop',
     match: (p: string) => p === '/shop' || p.startsWith('/category') || p.startsWith('/product'),
   },
-  { href: '/chat', label: 'Chat', match: (p: string) => p === '/chat' },
+  { href: '/chat', label: 'Tubaze', match: (p: string) => p === '/chat' },
+  { href: '/account', label: 'Account', match: (p: string) => p.startsWith('/account') },
 ] as const
 
 export function StoreHeader() {
   const pathname = usePathname()
-  const router = useRouter()
   const { hasUnread } = useUnread()
   const isDetail = pathname.startsWith('/product/')
 
   return (
-    <header className="bg-background/90 sticky top-0 z-40 flex h-14 items-center justify-between border-b pr-1 pl-4 backdrop-blur md:px-8">
+    // The PDP supplies its own mobile top bar (✕ · favorite · share · bag), so
+    // the global header is desktop-only there.
+    <header
+      className={cn(
+        'bg-background/90 sticky top-0 z-40 flex h-14 items-center justify-between border-b pr-1 pl-4 backdrop-blur md:px-8',
+        isDetail && 'hidden md:flex'
+      )}
+    >
       <div className="flex items-center gap-8">
-        {isDetail && (
-          <button
-            type="button"
-            onClick={() => router.back()}
-            aria-label="Close"
-            className="-ml-2 flex size-11 items-center justify-center md:hidden"
-          >
-            <X className="size-5" strokeWidth={1.8} />
-          </button>
-        )}
-
         <Link
           href="/"
           className={cn(
@@ -70,7 +65,7 @@ export function StoreHeader() {
         </nav>
       </div>
 
-      <SelectionBag />
+      <BagButton />
     </header>
   )
 }

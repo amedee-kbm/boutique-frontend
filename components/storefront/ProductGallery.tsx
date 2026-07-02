@@ -3,6 +3,14 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import Image from 'next/image'
 
+import { cn } from '@/lib/utils'
+
+// First image of the first colour section is the hero: it fills the space
+// between the sticky top bar (3.5rem) and the locked bottom chrome (~10rem:
+// add button + pinned thumbnail strip). Every later image stacks at the normal
+// portrait ratio. On desktop the hero reverts to the same ratio.
+export const HERO_HEIGHT = 'h-[calc(100svh-3.5rem-10rem)] md:h-auto md:aspect-[4/5]'
+
 export interface GallerySection {
   key: string
   colourId: string | null
@@ -54,7 +62,7 @@ export const ProductGallery = forwardRef<
 
   return (
     <div>
-      {sections.map((section) => (
+      {sections.map((section, sIdx) => (
         <div
           key={section.key}
           data-colour-id={section.colourId ?? ''}
@@ -66,18 +74,24 @@ export const ProductGallery = forwardRef<
             }
           }}
         >
-          {section.images.map((image, i) => (
-            <div key={image.id} className="bg-muted relative aspect-[4/5] w-full">
-              <Image
-                src={image.url}
-                alt={image.alt ?? productName}
-                fill
-                sizes="(max-width: 768px) 100vw, 66vw"
-                className="object-cover"
-                priority={i === 0 && section.key === sections[0]?.key}
-              />
-            </div>
-          ))}
+          {section.images.map((image, i) => {
+            const isHero = sIdx === 0 && i === 0
+            return (
+              <div
+                key={image.id}
+                className={cn('bg-muted relative w-full', isHero ? HERO_HEIGHT : 'aspect-[4/5]')}
+              >
+                <Image
+                  src={image.url}
+                  alt={image.alt ?? productName}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 66vw"
+                  className="object-cover"
+                  priority={isHero}
+                />
+              </div>
+            )
+          })}
         </div>
       ))}
     </div>

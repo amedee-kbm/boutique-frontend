@@ -9,6 +9,7 @@ import {
   addVariantOption,
   deleteVariantGroup,
   deleteVariantOption,
+  reorderVariantGroups,
   setVariantOptionHex,
   setVariantOptionImage,
 } from '@/lib/actions/variants'
@@ -166,6 +167,20 @@ export function VariantManager({
     })
   }
 
+  function reorderGroups(orderedIds: string[]) {
+    const previous = groups
+    setGroups((prev) =>
+      orderedIds.map((id) => prev.find((g) => g.id === id)).filter((g) => g !== undefined)
+    )
+    startTransition(async () => {
+      const result = await reorderVariantGroups(productId, orderedIds)
+      if (result.error) {
+        toast.error(result.error)
+        setGroups(previous)
+      }
+    })
+  }
+
   function setOptionImage(groupId: string, optionId: string, imageId: string | null) {
     const previous = groups
     setGroups((prev) =>
@@ -315,6 +330,7 @@ export function VariantManager({
       onRemoveGroup={removeGroup}
       onAddCustomOption={addCustomOption}
       onRemoveOption={removeOption}
+      onReorderGroups={reorderGroups}
       renderOptionTrailing={renderOptionTrailing}
     />
   )

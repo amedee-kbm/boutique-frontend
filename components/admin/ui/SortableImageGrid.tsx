@@ -15,7 +15,6 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 
 export interface SortableImage {
   id: string
@@ -25,12 +24,14 @@ export interface SortableImage {
 
 function SortableCard({
   image,
+  featured,
   onRemove,
-  children,
+  overlay,
 }: {
   image: SortableImage
+  featured: boolean
   onRemove: () => void
-  children?: ReactNode
+  overlay?: ReactNode
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: image.id,
@@ -40,40 +41,41 @@ function SortableCard({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('space-y-1', isDragging && 'z-10 opacity-80')}
+      className={cn(
+        'group bg-muted relative aspect-square overflow-hidden rounded-xl border',
+        featured && 'col-span-2 row-span-2',
+        isDragging && 'ring-ring z-10 opacity-80 ring-2'
+      )}
     >
-      <div
-        className={cn(
-          'group bg-muted relative aspect-square overflow-hidden rounded-lg border',
-          isDragging && 'ring-ring ring-2'
-        )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={image.url} alt={image.alt ?? ''} className="size-full object-cover" />
+
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+        className="bg-background/80 text-foreground absolute top-1.5 left-1.5 flex size-7 touch-none items-center justify-center rounded-md backdrop-blur-sm"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image.url} alt={image.alt ?? ''} className="size-full object-cover" />
+        <GripVertical className="size-4" />
+      </button>
 
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label="Drag to reorder"
-          className="bg-background/80 text-foreground absolute top-1 left-1 flex size-7 touch-none items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <GripVertical className="size-4" />
-        </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Remove image"
+        className="bg-background/80 text-foreground hover:bg-destructive hover:text-destructive-foreground absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-md backdrop-blur-sm transition-colors"
+      >
+        <X className="size-4" />
+      </button>
 
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon-sm"
-          onClick={onRemove}
-          aria-label="Remove image"
-          className="absolute top-1 right-1 opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          <X className="size-4" />
-        </Button>
-      </div>
+      {featured && (
+        <span className="bg-background/80 text-foreground absolute bottom-1.5 left-1.5 rounded-md px-2 py-0.5 text-xs font-medium backdrop-blur-sm">
+          Main
+        </span>
+      )}
 
-      {children}
+      {overlay && <div className="absolute right-1.5 bottom-1.5">{overlay}</div>}
     </div>
   )
 }
@@ -82,12 +84,14 @@ export function SortableImageGrid<T extends SortableImage>({
   images,
   onReorder,
   onRemove,
-  renderFooter,
+  renderOverlay,
+  addTile,
 }: {
   images: T[]
   onReorder: (images: T[]) => void
   onRemove: (id: string) => void
-  renderFooter?: (image: T) => ReactNode
+  renderOverlay?: (image: T) => ReactNode
+  addTile?: ReactNode
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -105,12 +109,17 @@ export function SortableImageGrid<T extends SortableImage>({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={images.map((img) => img.id)} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-          {images.map((image) => (
-            <SortableCard key={image.id} image={image} onRemove={() => onRemove(image.id)}>
-              {renderFooter?.(image)}
-            </SortableCard>
+        <div className="grid auto-rows-fr grid-cols-3 gap-2.5 sm:grid-cols-4">
+          {images.map((image, index) => (
+            <SortableCard
+              key={image.id}
+              image={image}
+              featured={index === 0}
+              onRemove={() => onRemove(image.id)}
+              overlay={renderOverlay?.(image)}
+            />
           ))}
+          {addTile}
         </div>
       </SortableContext>
     </DndContext>

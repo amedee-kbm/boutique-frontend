@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, ShoppingBag, MessageCircle } from 'lucide-react'
+import { Home, ShoppingBag, MessageSquare, User } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { useUnread } from '@/lib/chat/useUnread'
@@ -15,7 +15,13 @@ const TABS = [
     icon: ShoppingBag,
     match: (p: string) => p === '/shop' || p.startsWith('/category') || p.startsWith('/product'),
   },
-  { href: '/chat', label: 'Chat', icon: MessageCircle, match: (p: string) => p === '/chat' },
+  { href: '/chat', label: 'Tubaze', icon: MessageSquare, match: (p: string) => p === '/chat' },
+  {
+    href: '/account',
+    label: 'Account',
+    icon: User,
+    match: (p: string) => p.startsWith('/account'),
+  },
 ] as const
 
 export function StoreTabBar() {
@@ -26,7 +32,7 @@ export function StoreTabBar() {
   if (pathname.startsWith('/product/')) return null
 
   return (
-    <nav className="bg-background sticky bottom-0 z-40 grid grid-cols-3 border-t md:hidden">
+    <nav className="bg-background sticky bottom-0 z-40 grid grid-cols-4 border-t md:hidden">
       {TABS.map((tab) => {
         const active = tab.match(pathname)
         const Icon = tab.icon

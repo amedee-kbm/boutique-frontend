@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { productVariantGroups, productVariantOptions } from '@/lib/db/schema'
@@ -32,6 +32,25 @@ export async function addVariantGroup(productId: string, name: string) {
 
   revalidatePath(`/admin/products/${productId}/edit`)
   return { error: null, group: { ...group, options: [] as { id: string; value: string }[] } }
+}
+
+export async function reorderVariantGroups(productId: string, orderedIds: string[]) {
+  try {
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        db
+          .update(productVariantGroups)
+          .set({ position: index })
+          .where(
+            and(eq(productVariantGroups.id, id), eq(productVariantGroups.productId, productId))
+          )
+      )
+    )
+  } catch {
+    return { error: 'Could not reorder options' }
+  }
+  revalidatePath(`/admin/products/${productId}/edit`)
+  return { error: null }
 }
 
 export async function deleteVariantGroup(id: string, productId: string) {

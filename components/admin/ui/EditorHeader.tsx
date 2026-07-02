@@ -30,7 +30,7 @@ export function EditorHeader({
   onSave,
 }: EditorHeaderProps) {
   return (
-    <header className="bg-background sticky top-0 z-20 -mx-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-4 py-2.5">
+    <header className="bg-background sticky top-0 z-20 -mx-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-4 py-2.5 md:-mx-8 md:px-8">
       <div className="justify-self-start">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           {cancelLabel}

@@ -10,19 +10,59 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
--- Helper: identify the seller (non-anonymous authenticated user)
+-- admins: allowlist of seller accounts.
+--
+-- The store now has CUSTOMER accounts, which are also non-anonymous
+-- authenticated users — so "non-anonymous" can no longer mean "admin".
+-- A user is admin ONLY if their id is seeded into public.admins. RLS is
+-- enabled with NO policies so the table is unreadable/unwritable from the
+-- client; only is_admin() (security definer) and the service-role client
+-- touch it.
+-- ------------------------------------------------------------
+create table if not exists public.admins (
+  user_id uuid primary key
+);
+
+alter table public.admins
+  drop constraint if exists admins_user_id_fkey;
+
+alter table public.admins
+  add constraint admins_user_id_fkey
+  foreign key (user_id)
+  references auth.users (id)
+  on delete cascade;
+
+alter table public.admins enable row level security;
+
+-- ------------------------------------------------------------
+-- SEED THE SELLER  ←  REQUIRED MANUAL STEP, EDIT THE EMAIL BELOW
+-- Until the seller's id is in public.admins, NO account passes is_admin():
+-- the admin panel and every "admin" RLS policy are closed to everyone.
+-- Run once with the seller's login email (idempotent; inserts nothing if the
+-- email doesn't exist yet, so create the auth user first):
+--
+--   insert into public.admins (user_id)
+--   select id from auth.users where email = 'seller@example.com'
+--   on conflict (user_id) do nothing;
+-- ------------------------------------------------------------
+
+-- ------------------------------------------------------------
+-- Helper: identify the seller (a user listed in public.admins).
 -- Wrapped in (select ...) inside policies for per-statement caching.
--- NOT security definer — only reads JWT, no table access.
+-- SECURITY DEFINER so it can read public.admins past that table's RLS lock;
+-- search_path pinned to '' so every reference must be schema-qualified.
 -- ------------------------------------------------------------
 create or replace function public.is_admin()
 returns boolean
 language sql
 stable
+security definer
 set search_path = ''
 as $$
-  select
-    (select auth.role()) = 'authenticated'
-    and coalesce((select (auth.jwt() ->> 'is_anonymous')::boolean), false) = false
+  select exists (
+    select 1 from public.admins
+    where user_id = (select auth.uid())
+  )
 $$;
 
 -- ============================================================
@@ -396,6 +436,142 @@ create policy "chat_message_items: admin all"
   with check ((select public.is_admin()));
 
 -- ============================================================
+-- orders / order_items
+-- Orders hold PII (name, phone, address). Guests may insert their own
+-- order (created_by = their uid) and read only that own row back — needed
+-- for INSERT ... RETURNING id. They cannot update/delete or read others'.
+-- Admin reads & manages all (works the inbox, changes status).
+-- ============================================================
+create index if not exists orders_created_by_idx
+  on public.orders (created_by);
+
+create index if not exists order_items_order_id_idx
+  on public.order_items (order_id);
+
+-- FK from orders.created_by → auth.users.id (cross-schema; Drizzle won't manage it).
+alter table public.orders
+  drop constraint if exists orders_created_by_fkey;
+
+alter table public.orders
+  add constraint orders_created_by_fkey
+  foreign key (created_by)
+  references auth.users (id)
+  on delete set null;
+
+alter table public.orders      enable row level security;
+alter table public.order_items enable row level security;
+
+drop policy if exists "orders: guest insert own"  on public.orders;
+drop policy if exists "orders: guest read own"     on public.orders;
+drop policy if exists "orders: admin all"          on public.orders;
+
+create policy "orders: guest insert own"
+  on public.orders
+  for insert
+  to authenticated
+  with check (
+    not (select public.is_admin())
+    and (select auth.uid()) = created_by
+  );
+
+create policy "orders: guest read own"
+  on public.orders
+  for select
+  to authenticated
+  using (
+    (select public.is_admin())
+    or (created_by = (select auth.uid()))
+  );
+
+create policy "orders: admin all"
+  on public.orders
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+drop policy if exists "order_items: guest insert own order" on public.order_items;
+drop policy if exists "order_items: admin all"              on public.order_items;
+
+create policy "order_items: guest insert own order"
+  on public.order_items
+  for insert
+  to authenticated
+  with check (
+    not (select public.is_admin())
+    and exists (
+      select 1 from public.orders
+      where orders.id = order_items.order_id
+        and orders.created_by = (select auth.uid())
+    )
+  );
+
+create policy "order_items: admin all"
+  on public.order_items
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+-- ============================================================
+-- favorites
+-- A customer's saved pieces. Owner-only: a signed-in user reads, adds and
+-- removes ONLY their own rows (user_id = their uid). Guests (anon) cannot
+-- favorite at all — every policy is scoped to authenticated + own uid, and a
+-- guest's uid never matches a row they could insert under another id. Admin
+-- has no business reading customers' favorites, so there is no admin policy.
+-- ============================================================
+create index if not exists favorites_product_id_idx
+  on public.favorites (product_id);
+
+-- FK from favorites.user_id → auth.users.id (cross-schema; Drizzle won't manage it).
+alter table public.favorites
+  drop constraint if exists favorites_user_id_fkey;
+
+alter table public.favorites
+  add constraint favorites_user_id_fkey
+  foreign key (user_id)
+  references auth.users (id)
+  on delete cascade;
+
+alter table public.favorites enable row level security;
+
+drop policy if exists "favorites: owner read"   on public.favorites;
+drop policy if exists "favorites: owner insert" on public.favorites;
+drop policy if exists "favorites: owner delete" on public.favorites;
+
+create policy "favorites: owner read"
+  on public.favorites
+  for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+create policy "favorites: owner insert"
+  on public.favorites
+  for insert
+  to authenticated
+  with check (
+    (select auth.uid()) = user_id
+    and not (select public.is_admin())
+  );
+
+create policy "favorites: owner delete"
+  on public.favorites
+  for delete
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+-- ============================================================
+-- push_subscriptions
+-- Written/read only by the service-role server action (which bypasses
+-- RLS). Enable RLS with no policies so nothing else can touch it.
+-- ============================================================
+create index if not exists push_subscriptions_session_id_idx
+  on public.push_subscriptions (session_id);
+
+alter table public.push_subscriptions enable row level security;
+
+-- ============================================================
 -- Realtime
 -- Broadcast row changes on chat tables so the admin inbox and
 -- the customer widget receive live updates. Idempotent.
@@ -418,6 +594,15 @@ begin
       and tablename = 'chat_sessions'
   ) then
     alter publication supabase_realtime add table public.chat_sessions;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'orders'
+  ) then
+    alter publication supabase_realtime add table public.orders;
   end if;
 end $$;
 

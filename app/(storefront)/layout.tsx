@@ -3,18 +3,23 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { StoreHeader } from '@/components/storefront/StoreHeader'
 import { StoreTabBar } from '@/components/storefront/StoreTabBar'
 import { ChatPresence } from '@/components/storefront/ChatPresence'
+import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar'
+import { FavoritesProvider } from '@/lib/favorites/useFavorites'
 
 export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
   return (
     <NuqsAdapter>
-      <div className="bg-background mx-auto flex min-h-svh w-full max-w-[480px] flex-col border-x md:max-w-none md:border-x-0">
-        <StoreHeader />
+      <FavoritesProvider>
+        <div className="bg-background mx-auto flex min-h-svh w-full max-w-[480px] flex-col border-x md:max-w-none md:border-x-0">
+          <StoreHeader />
 
-        <main className="flex-1">{children}</main>
+          <main className="flex-1">{children}</main>
 
-        <StoreTabBar />
-        <ChatPresence />
-      </div>
+          <StoreTabBar />
+          <ChatPresence />
+          <ServiceWorkerRegistrar />
+        </div>
+      </FavoritesProvider>
     </NuqsAdapter>
   )
 }

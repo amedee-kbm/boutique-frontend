@@ -72,6 +72,10 @@ export function VariantStager({
     )
   }
 
+  function reorderGroups(orderedIds: string[]) {
+    onChange(orderedIds.map((id) => groups.find((g) => g.id === id)).filter((g) => g !== undefined))
+  }
+
   return (
     <VariantBuilder
       groups={groups}
@@ -80,6 +84,7 @@ export function VariantStager({
       onRemoveGroup={removeGroup}
       onAddCustomOption={addCustomOption}
       onRemoveOption={removeOption}
+      onReorderGroups={reorderGroups}
     />
   )
 }

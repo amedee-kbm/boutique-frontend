@@ -8,6 +8,8 @@ import {
   chatMessageItems,
   chatMessages,
   chatSessions,
+  orderItems,
+  orders,
   productFilterValues,
   productImages,
   products,
@@ -35,16 +37,18 @@ function groupFilters(
 }
 
 export async function getDashboardStats() {
-  const [productResult, categoryResult, chatResult] = await Promise.all([
+  const [productResult, categoryResult, chatResult, newOrderResult] = await Promise.all([
     db.select({ count: count() }).from(products),
     db.select({ count: count() }).from(categories),
     db.select({ count: count() }).from(chatSessions),
+    db.select({ count: count() }).from(orders).where(eq(orders.status, 'new')),
   ])
 
   return {
     productCount: productResult[0].count,
     categoryCount: categoryResult[0].count,
     chatCount: chatResult[0].count,
+    newOrderCount: newOrderResult[0].count,
   }
 }
 
@@ -278,7 +282,21 @@ const hexesSql = sql<string[]>`coalesce((
     AND o.hex IS NOT NULL
 ), '{}')`.as('hexes')
 
-export async function getHomeFeed(limit = 20): Promise<StoreCard[]> {
+// Size option values for a product, in option order. Home cards need these so
+// the "+" quick-add can open a size sheet without a second round-trip.
+const sizesSql = sql<string[]>`coalesce((
+  SELECT array_agg(o.value ORDER BY o.position)
+  FROM product_variant_options o
+  JOIN product_variant_groups g ON g.id = o.group_id
+  WHERE g.product_id = products.id
+    AND g.name = 'Size'
+), '{}')`.as('sizes')
+
+export interface HomeCard extends StoreCard {
+  sizes: string[]
+}
+
+export async function getHomeFeed(limit = 20): Promise<HomeCard[]> {
   return db
     .select({
       id: products.id,
@@ -287,11 +305,38 @@ export async function getHomeFeed(limit = 20): Promise<StoreCard[]> {
       price: products.price,
       thumbnail: thumbnailSql,
       hexes: hexesSql,
+      sizes: sizesSql,
     })
     .from(products)
     .where(eq(products.visible, true))
     .orderBy(desc(products.createdAt))
     .limit(limit)
+}
+
+export interface HomeFilter {
+  label: string
+  href: string
+}
+
+// The home top filter strip. P7 (admin merchandising) will make these entries
+// admin-editable via a home_filters table; until then this is the seam — it
+// falls back to the visible category index so the strip is never empty.
+export async function getHomeFilters(): Promise<HomeFilter[]> {
+  const rows = await db
+    .select({
+      name: categories.name,
+      slug: categories.slug,
+      productCount: sql<number>`(
+        SELECT COUNT(*)::int FROM products p
+        WHERE p.category_id = categories.id AND p.visible = true
+      )`.as('product_count'),
+    })
+    .from(categories)
+    .orderBy(asc(categories.name))
+
+  return rows
+    .filter((r) => r.productCount > 0)
+    .map((r) => ({ label: r.name, href: `/category/${r.slug}` }))
 }
 
 export async function getCategoryIndex() {
@@ -497,6 +542,105 @@ export async function getProductBySlug(slug: string) {
   }))
 
   return { ...product, images, variantGroups }
+}
+
+export interface SwipeCard {
+  slug: string
+  name: string
+  price: string
+  thumbnail: string | null
+}
+
+// The ordered same-category product list that backs the PDP swipe pager (P4):
+// the main area swipes between these, the thumbnail strip mirrors them. Returns
+// [] when the product has no category so the pager degrades to a single product.
+// Order matches the category feed (newest first) so swipe + strip stay aligned.
+export async function getCategorySwipeList(categoryId: string | null): Promise<SwipeCard[]> {
+  if (!categoryId) return []
+  return db
+    .select({
+      slug: products.slug,
+      name: products.name,
+      price: products.price,
+      thumbnail: thumbnailSql,
+    })
+    .from(products)
+    .where(and(eq(products.visible, true), eq(products.categoryId, categoryId)))
+    .orderBy(desc(products.createdAt))
+}
+
+export type OrderStatus = 'new' | 'contacted' | 'done'
+
+export interface AdminOrderItem {
+  id: string
+  name: string
+  colorValue: string | null
+  sizeValue: string | null
+  price: string
+  imageUrl: string | null
+}
+
+export interface AdminOrder {
+  id: string
+  guestName: string
+  phone: string
+  address: string
+  note: string | null
+  status: OrderStatus
+  createdAt: Date
+  items: AdminOrderItem[]
+}
+
+export async function getAllOrders(): Promise<AdminOrder[]> {
+  const rows = await db
+    .select({
+      id: orders.id,
+      guestName: orders.guestName,
+      phone: orders.phone,
+      address: orders.address,
+      note: orders.note,
+      status: orders.status,
+      createdAt: orders.createdAt,
+    })
+    .from(orders)
+    .orderBy(desc(orders.createdAt))
+
+  if (rows.length === 0) return []
+
+  const itemRows = await db
+    .select({
+      id: orderItems.id,
+      orderId: orderItems.orderId,
+      name: orderItems.nameSnapshot,
+      colorValue: orderItems.colorValue,
+      sizeValue: orderItems.sizeValue,
+      price: orderItems.priceSnapshot,
+      imageUrl: orderItems.imageUrlSnapshot,
+    })
+    .from(orderItems)
+    .where(
+      inArray(
+        orderItems.orderId,
+        rows.map((r) => r.id)
+      )
+    )
+    .orderBy(asc(orderItems.position))
+
+  const byOrder = new Map<string, AdminOrderItem[]>()
+  for (const item of itemRows) {
+    const list = byOrder.get(item.orderId) ?? []
+    list.push({
+      id: item.id,
+      name: item.name,
+      colorValue: item.colorValue,
+      sizeValue: item.sizeValue,
+      price: item.price,
+      imageUrl: item.imageUrl,
+    })
+    byOrder.set(item.orderId, list)
+  }
+
+  return rows.map((r) => ({ ...r, items: byOrder.get(r.id) ?? [] }))
 }
 
 export async function getAllChatSessions() {

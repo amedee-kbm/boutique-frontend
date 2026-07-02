@@ -37,24 +37,44 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+type User = ReturnType<typeof userEvent.setup>
+
+// A preset type with values starts collapsed to its summary row; expand it,
+// then open the value field's checklist popover to reach the checkboxes.
+async function openSizePicker(user: User) {
+  await user.click(screen.getByRole('button', { name: /^size/i }))
+  await user.click(screen.getByRole('button', { name: /size values/i }))
+}
+
+// An unused preset type is added through the menu, which opens its editor; then
+// open its checklist popover.
+async function openColourPicker(user: User) {
+  await user.click(screen.getByRole('button', { name: /add options/i }))
+  await user.click(screen.getByRole('button', { name: 'Colour' }))
+  await user.click(screen.getByRole('button', { name: /colour values/i }))
+}
+
 describe('VariantManager', () => {
-  it('marks existing options as selected', () => {
+  it('marks existing options as selected', async () => {
+    const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
-    expect(screen.getByRole('button', { name: 'S' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'L' })).toHaveAttribute('aria-pressed', 'false')
+    await openSizePicker(user)
+    expect(await screen.findByRole('checkbox', { name: 'S' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'M' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'L' })).not.toBeChecked()
   })
 
   it('adds an option to an existing preset group', async () => {
     vi.mocked(addVariantOption).mockResolvedValue({ error: null, option: { id: 'o3', value: 'L' } })
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
+    await openSizePicker(user)
 
-    await user.click(screen.getByRole('button', { name: 'L' }))
+    await user.click(screen.getByRole('checkbox', { name: 'L' }))
 
     expect(addVariantOption).toHaveBeenCalledWith('g1', 'p1', 'L')
     expect(addVariantGroup).not.toHaveBeenCalled()
-    expect(await screen.findByRole('button', { name: 'L', pressed: true })).toBeInTheDocument()
+    expect(await screen.findByRole('checkbox', { name: 'L', checked: true })).toBeInTheDocument()
   })
 
   it('creates the group when selecting an option for a not-yet-used type', async () => {
@@ -68,8 +88,9 @@ describe('VariantManager', () => {
     })
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={[]} images={[]} />)
+    await openColourPicker(user)
 
-    await user.click(screen.getByRole('button', { name: 'Black' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Black' }))
 
     await waitFor(() => expect(addVariantGroup).toHaveBeenCalledWith('p1', 'Colour'))
     await waitFor(() => expect(addVariantOption).toHaveBeenCalledWith('g2', 'p1', 'Black'))
@@ -79,12 +100,13 @@ describe('VariantManager', () => {
     vi.mocked(deleteVariantOption).mockResolvedValue({ error: null })
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
+    await openSizePicker(user)
 
-    await user.click(screen.getByRole('button', { name: 'M' }))
+    await user.click(screen.getByRole('checkbox', { name: 'M' }))
 
     expect(deleteVariantOption).toHaveBeenCalledWith('o2', 'p1')
     expect(deleteVariantGroup).not.toHaveBeenCalled()
-    expect(await screen.findByRole('button', { name: 'M', pressed: false })).toBeInTheDocument()
+    expect(await screen.findByRole('checkbox', { name: 'M', checked: false })).toBeInTheDocument()
   })
 
   it('deletes the group when its last option is removed', async () => {
@@ -95,8 +117,9 @@ describe('VariantManager', () => {
     ]
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={single} images={[]} />)
+    await openSizePicker(user)
 
-    await user.click(screen.getByRole('button', { name: 'S' }))
+    await user.click(screen.getByRole('checkbox', { name: 'S' }))
 
     expect(deleteVariantOption).toHaveBeenCalledWith('o1', 'p1')
     await waitFor(() => expect(deleteVariantGroup).toHaveBeenCalledWith('g1', 'p1'))
@@ -106,11 +129,12 @@ describe('VariantManager', () => {
     vi.mocked(deleteVariantOption).mockResolvedValue({ error: 'Nope' })
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={groups} images={[]} />)
+    await openSizePicker(user)
 
-    await user.click(screen.getByRole('button', { name: 'M' }))
+    await user.click(screen.getByRole('checkbox', { name: 'M' }))
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Nope'))
-    expect(await screen.findByRole('button', { name: 'M', pressed: true })).toBeInTheDocument()
+    expect(await screen.findByRole('checkbox', { name: 'M', checked: true })).toBeInTheDocument()
   })
 
   it('adds a custom type and shows it', async () => {
@@ -121,7 +145,9 @@ describe('VariantManager', () => {
     const user = userEvent.setup()
     render(<VariantManager productId="p1" initialGroups={[]} images={[]} />)
 
-    await user.type(screen.getByPlaceholderText(/new type/i), 'Style')
+    await user.click(screen.getByRole('button', { name: /add options/i }))
+    await user.click(screen.getByRole('button', { name: /create custom option/i }))
+    await user.type(screen.getByRole('textbox', { name: /new option name/i }), 'Style')
     await user.click(screen.getByRole('button', { name: /add group/i }))
 
     expect(addVariantGroup).toHaveBeenCalledWith('p1', 'Style')

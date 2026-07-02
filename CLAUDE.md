@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells affordable/bargain fashion. There is **no payment processing** — the goal is to present products attractively and funnel customers into a live chat conversation with the seller to close the sale.
+Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells affordable/bargain fashion. There is **no online payment** — the store closes sales the WhatsApp-Shop / cash-on-delivery way. Customers save pieces to a **Selection**, then either **place a no-pay order** (their selection plus name, phone and delivery address) that the seller works from an admin **Orders inbox**, or open **Tubaze** — a live chat with the seller for questions. Order is the primary close-the-sale path; Tubaze is for Q&A. No money is handled in-app; the seller arranges payment and delivery directly with the customer.
 
 ---
 
@@ -75,7 +75,9 @@ Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells af
 - Browse products by category
 - Product detail page (photos, description, price, size/variant options)
 - Search and filter within categories
-- Live chat widget — opens a real-time chat with the seller (Supabase Realtime)
+- Save pieces to a **Selection** (localStorage, no account) — quick-add from the feed cards or from the product page
+- **Place a no-pay order** from the Selection: name + phone + delivery address (+ optional note). No online payment — the seller contacts the customer to confirm and arrange delivery
+- **Tubaze** live chat — opens a real-time chat with the seller (Supabase Realtime); always reachable and startable with just a name (no selection required)
 - Mobile-first layout throughout; desktop is secondary
 
 ### Admin Panel (seller-facing)
@@ -85,15 +87,15 @@ Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells af
 - Manage products: create, edit, delete, toggle visibility
 - Manage categories
 - Upload and reorder product images
+- **Orders inbox**: view incoming no-pay orders (contact details + item snapshots) and move status `new → contacted → done`
 - View and respond to customer chat conversations in real time
-- Simple dashboard: active chats, product count, recently added items
+- Simple dashboard: new orders, product count, active chats, recently added items
 
 ### Explicitly out of scope
 
-- Payment processing (no Stripe, no checkout, no cart)
-- Order management
-- Shipping / logistics
-- Customer accounts (customers chat as guests)
+- **Online payment** (no Stripe, no card capture, no in-app checkout total). The no-pay order collects contact/delivery details only — money changes hands offline between seller and customer
+- Shipping / logistics automation (no carrier integration; the seller arranges delivery manually)
+- ~~Customer accounts~~ — customer accounts now exist (Supabase email/password, no email confirmation). Browsing, the Bag, and placing an order stay **guest-allowed**; an account is only required for Favorites. Guests still order and chat anonymously.
 
 ---
 

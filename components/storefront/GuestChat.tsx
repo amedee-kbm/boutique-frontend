@@ -1,18 +1,68 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { createClient } from '@/lib/supabase/client'
-import { useGuestReady, useGuestSession } from '@/lib/chat/guest'
+import { useGuestName, useGuestReady, useGuestSession } from '@/lib/chat/guest'
+import { startGuestChat } from '@/lib/chat/funnel'
 import { markChatSeen, markLastMessageAt } from '@/lib/chat/useUnread'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ProductInquiryCard, type InquiryItem } from '@/components/ProductInquiryCard'
+
+// Lets a guest open a conversation with just their name — no selection needed.
+// On success startGuestChat persists the session, which flips GuestChat into
+// the live thread via the shared guest-session store.
+function StartChat() {
+  const persistedName = useGuestName()
+  const [editedName, setEditedName] = useState<string | null>(null)
+  const name = editedName ?? persistedName
+  const [starting, startTransition] = useTransition()
+
+  function handleStart() {
+    const trimmed = name.trim()
+    if (!trimmed) {
+      toast.error('Add your name so the seller knows who they are chatting with')
+      return
+    }
+    startTransition(async () => {
+      const { error } = await startGuestChat({ name: trimmed })
+      if (error) toast.error(error)
+    })
+  }
+
+  return (
+    <div className="px-4 py-16 text-center">
+      <p className="text-sm font-medium">Chat with Zita</p>
+      <p className="text-muted-foreground mx-auto mt-1 max-w-xs text-xs">
+        Ask anything about sizing, colours, or delivery. Add your name to start.
+      </p>
+      <div className="mx-auto mt-4 flex max-w-xs flex-col gap-2">
+        <Input
+          value={name}
+          onChange={(e) => setEditedName(e.target.value)}
+          placeholder="Your name"
+          aria-label="Your name"
+          autoComplete="name"
+          className="rounded-none"
+          onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+        />
+        <Button
+          type="button"
+          className="h-11 rounded-none"
+          disabled={starting}
+          onClick={handleStart}
+        >
+          {starting ? 'Starting…' : 'Start chatting'}
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 interface Message {
   id: string
@@ -195,19 +245,7 @@ export function GuestChat() {
 
   if (!ready) return null
 
-  if (!sessionId) {
-    return (
-      <div className="px-4 py-16 text-center">
-        <p className="text-sm">No messages yet.</p>
-        <p className="text-muted-foreground mt-1 text-xs">
-          Add pieces to your selection and tap “Ask about these” to start chatting with the seller.
-        </p>
-        <Button variant="outline" className="mt-4 rounded-none" render={<Link href="/" />}>
-          Browse pieces
-        </Button>
-      </div>
-    )
-  }
+  if (!sessionId) return <StartChat />
 
   return (
     <div className="flex h-[calc(100svh-3.5rem-3.5rem)] flex-col md:h-[calc(100svh-3.5rem)]">

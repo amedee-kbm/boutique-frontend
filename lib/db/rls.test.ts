@@ -31,11 +31,15 @@ const IDS = {
 // Real auth.users rows — UUIDs resolved in beforeAll
 let guestUid: string
 let otherGuestUid: string
+// The seller, allowlisted in public.admins, and a registered customer who is
+// NOT — both are non-anonymous, so only the allowlist separates them.
+let adminUid: string
+let customerUid: string
 
 // ── Role helper ────────────────────────────────────────────────────────────────
 // Runs `fn` inside a transaction with the given role + JWT claims.
 // SET LOCAL / set_config with local=true are both transaction-scoped.
-type Role = 'anon' | 'guest' | 'other-guest' | 'admin'
+type Role = 'anon' | 'guest' | 'other-guest' | 'admin' | 'customer'
 
 async function as<T>(role: Role, fn: (tx: postgres.TransactionSql) => Promise<T>): Promise<T> {
   const pgRole = role === 'anon' ? 'anon' : 'authenticated'
@@ -44,14 +48,12 @@ async function as<T>(role: Role, fn: (tx: postgres.TransactionSql) => Promise<T>
     role === 'anon'
       ? { role: 'anon' }
       : role === 'admin'
-        ? {
-            role: 'authenticated',
-            is_anonymous: false,
-            sub: '00000000-0000-0000-0000-000000000000',
-          }
-        : role === 'other-guest'
-          ? { role: 'authenticated', is_anonymous: true, sub: otherGuestUid }
-          : { role: 'authenticated', is_anonymous: true, sub: guestUid }
+        ? { role: 'authenticated', is_anonymous: false, sub: adminUid }
+        : role === 'customer'
+          ? { role: 'authenticated', is_anonymous: false, sub: customerUid }
+          : role === 'other-guest'
+            ? { role: 'authenticated', is_anonymous: true, sub: otherGuestUid }
+            : { role: 'authenticated', is_anonymous: true, sub: guestUid }
 
   return db.begin(async (tx) => {
     await tx.unsafe(`SET LOCAL ROLE ${pgRole}`)
@@ -62,8 +64,9 @@ async function as<T>(role: Role, fn: (tx: postgres.TransactionSql) => Promise<T>
 
 // ── Setup / teardown ──────────────────────────────────────────────────────────
 beforeAll(async () => {
-  // Create two real auth users so chat_sessions.created_by FK is satisfied
-  const [r1, r2] = await Promise.all([
+  // Create four real auth users: two anonymous-style guests (for the
+  // chat_sessions.created_by FK), the seller, and a non-allowlisted customer.
+  const [r1, r2, r3, r4] = await Promise.all([
     supabase.auth.admin.createUser({
       email: `rls-guest-${Date.now()}@test.invalid`,
       password: 'rls-test-pw-123!',
@@ -74,12 +77,40 @@ beforeAll(async () => {
       password: 'rls-test-pw-123!',
       email_confirm: true,
     }),
+    supabase.auth.admin.createUser({
+      email: `rls-admin-${Date.now()}@test.invalid`,
+      password: 'rls-test-pw-123!',
+      email_confirm: true,
+    }),
+    supabase.auth.admin.createUser({
+      email: `rls-customer-${Date.now()}@test.invalid`,
+      password: 'rls-test-pw-123!',
+      email_confirm: true,
+    }),
   ])
-  if (r1.error || r2.error || !r1.data.user || !r2.data.user) {
-    throw new Error(`createUser failed: ${JSON.stringify(r1.error)} | ${JSON.stringify(r2.error)}`)
+  if (
+    r1.error ||
+    r2.error ||
+    r3.error ||
+    r4.error ||
+    !r1.data.user ||
+    !r2.data.user ||
+    !r3.data.user ||
+    !r4.data.user
+  ) {
+    throw new Error(
+      `createUser failed: ${JSON.stringify([r1.error, r2.error, r3.error, r4.error])}`
+    )
   }
   guestUid = r1.data.user.id
   otherGuestUid = r2.data.user.id
+  adminUid = r3.data.user.id
+  customerUid = r4.data.user.id
+
+  // Allowlist only the seller — this is what makes is_admin() true for them and
+  // false for the (also non-anonymous) customer. Via the raw connection since
+  // the admins table is RLS-locked and PostgREST may not have it cached yet.
+  await db`INSERT INTO public.admins (user_id) VALUES (${adminUid}) ON CONFLICT DO NOTHING`
 
   // Insert test fixtures using service_role (bypasses RLS)
   await supabase
@@ -137,6 +168,8 @@ afterAll(async () => {
   await Promise.all([
     supabase.auth.admin.deleteUser(guestUid),
     supabase.auth.admin.deleteUser(otherGuestUid),
+    supabase.auth.admin.deleteUser(adminUid), // cascade removes the admins row
+    supabase.auth.admin.deleteUser(customerUid),
   ])
   await db.end()
 })
@@ -285,6 +318,37 @@ describe('RLS: product_images', () => {
       `
       )
     ).rejects.toThrow()
+  })
+})
+
+// ── customer is not admin ───────────────────────────────────────────────────────
+// A registered customer is non-anonymous, just like the seller. The ONLY thing
+// that grants admin is membership in public.admins — these guard against a
+// customer inheriting admin power.
+describe('RLS: customer (non-anonymous, not allowlisted) is not admin', () => {
+  it('customer cannot insert categories', async () => {
+    await expect(
+      as(
+        'customer',
+        (tx) => tx`INSERT INTO public.categories (name, slug) VALUES ('Bad', 'rls-bad-c')`
+      )
+    ).rejects.toThrow()
+  })
+
+  it('customer cannot read hidden products', async () => {
+    const rows = await as(
+      'customer',
+      (tx) => tx`SELECT id FROM public.products WHERE id = ${IDS.hiddenProduct}`
+    )
+    expect(rows).toHaveLength(0)
+  })
+
+  it("customer cannot read another user's chat session", async () => {
+    const rows = await as(
+      'customer',
+      (tx) => tx`SELECT id FROM public.chat_sessions WHERE id = ${IDS.chatSession}`
+    )
+    expect(rows).toHaveLength(0)
   })
 })
 

@@ -21,7 +21,6 @@ import {
   sendAdminMessage,
   toggleProductVisibility,
   updateProduct,
-  updateProductImageAlt,
   uploadProductImage,
 } from '@/lib/actions/products'
 
@@ -297,39 +296,6 @@ describe('uploadProductImage', () => {
 
     expect(result).toEqual({ error: 'Bucket full', url: null })
     expect(mockedDb.insert).not.toHaveBeenCalled()
-  })
-})
-
-describe('updateProductImageAlt', () => {
-  it('returns an error when the image is missing', async () => {
-    mockedDb.select.mockReturnValue(chain([]))
-
-    const result = await updateProductImageAlt('img1', 'hat')
-
-    expect(result).toEqual({ error: 'Image not found' })
-    expect(mockedDb.update).not.toHaveBeenCalled()
-  })
-
-  it('trims and stores the alt text, then revalidates the edit page', async () => {
-    mockedDb.select.mockReturnValue(chain([{ productId: 'p1' }]))
-    const c = chain()
-    mockedDb.update.mockReturnValue(c)
-
-    const result = await updateProductImageAlt('img1', '  red hat  ')
-
-    expect(result).toEqual({ error: null })
-    expect(c.set).toHaveBeenCalledWith({ alt: 'red hat' })
-    expect(revalidatePath).toHaveBeenCalledWith('/admin/products/p1/edit')
-  })
-
-  it('stores null when the alt text is blank', async () => {
-    mockedDb.select.mockReturnValue(chain([{ productId: 'p1' }]))
-    const c = chain()
-    mockedDb.update.mockReturnValue(c)
-
-    await updateProductImageAlt('img1', '   ')
-
-    expect(c.set).toHaveBeenCalledWith({ alt: null })
   })
 })
 

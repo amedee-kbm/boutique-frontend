@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { getProductBySlug } from '@/lib/db/queries'
-import { ProductDetail, type ProductDetailData } from '@/components/storefront/ProductDetail'
-import type { GallerySection } from '@/components/storefront/ProductGallery'
+import { getCategorySwipeList, getProductBySlug, type SwipeCard } from '@/lib/db/queries'
+import { buildProductDetailData } from '@/lib/storefront/product-detail'
+import { ProductSwiper } from '@/components/storefront/ProductSwiper'
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -31,46 +31,24 @@ export default async function ProductPage({
   const { colour } = await searchParams
   const initialColourValue = (Array.isArray(colour) ? colour[0] : colour) ?? null
 
-  const colourGroup = product.variantGroups.find((g) => g.name === 'Colour')
-  const sizeGroup = product.variantGroups.find((g) => g.name === 'Size')
+  const initial = buildProductDetailData(product, initialColourValue)
 
-  const imageById = new Map(product.images.map((img) => [img.id, img]))
-  const looseImages = product.images.filter((img) => !img.optionId)
-
-  const colours = (colourGroup?.options ?? []).map((option) => {
-    const images = product.images.filter((img) => img.optionId === option.id)
-    const rep = (option.imageId && imageById.get(option.imageId)) || images[0] || null
-    return {
-      optionId: option.id,
-      value: option.value,
-      hex: option.hex,
-      repImageUrl: rep?.url ?? null,
-    }
-  })
-
-  const sections: GallerySection[] = []
-  for (const option of colourGroup?.options ?? []) {
-    const images = product.images.filter((img) => img.optionId === option.id)
-    if (images.length > 0) sections.push({ key: option.id, colourId: option.id, images })
-  }
-  if (sections.length === 0 && looseImages.length > 0) {
-    sections.push({ key: 'all', colourId: null, images: looseImages })
-  } else if (looseImages.length > 0) {
-    sections.push({ key: 'loose', colourId: null, images: looseImages })
+  // Same-category siblings back the swipe pager. Ensure the opened product is in
+  // the list (it always should be — it's visible), so there's a valid start.
+  const list = await getCategorySwipeList(product.categoryId)
+  let initialIndex = list.findIndex((c) => c.slug === slug)
+  let pagerList: SwipeCard[] = list
+  if (initialIndex === -1) {
+    pagerList = [
+      {
+        slug: product.slug,
+        name: product.name,
+        price: product.price,
+        thumbnail: initial.fallbackImageUrl,
+      },
+    ]
+    initialIndex = 0
   }
 
-  const data: ProductDetailData = {
-    id: product.id,
-    slug: product.slug,
-    name: product.name,
-    description: product.description,
-    price: product.price,
-    sections,
-    colours,
-    sizes: (sizeGroup?.options ?? []).map((o) => o.value),
-    fallbackImageUrl: product.images[0]?.url ?? null,
-    initialColourValue,
-  }
-
-  return <ProductDetail product={data} />
+  return <ProductSwiper list={pagerList} initial={initial} initialIndex={initialIndex} />
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { ImagePlus } from 'lucide-react'
+import { ImagePlus, Plus } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { SortableImageGrid } from '@/components/admin/ui/SortableImageGrid'
@@ -50,12 +50,12 @@ export function MediaZone({ onChange }: { onChange?: (files: File[]) => void }) 
     commit(images.filter((img) => img.id !== id))
   }
 
-  return (
-    <div className="space-y-4">
+  if (images.length === 0) {
+    return (
       <div
         {...getRootProps()}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+          'flex aspect-[3/2] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-center transition-colors',
           isDragActive ? 'border-ring bg-muted/50' : 'border-input hover:bg-muted/30'
         )}
       >
@@ -64,18 +64,33 @@ export function MediaZone({ onChange }: { onChange?: (files: File[]) => void }) 
         <p className="text-sm font-medium">
           {isDragActive ? 'Drop the photos here' : 'Add images'}
         </p>
-        <p className="text-muted-foreground text-xs">PNG or JPG, multiple allowed</p>
-      </div>
-
-      {images.length > 0 && (
-        <SortableImageGrid images={images} onReorder={commit} onRemove={handleRemove} />
-      )}
-
-      {images.length > 0 && (
         <p className="text-muted-foreground text-xs">
-          The first photo is the main image. Drag to reorder.
+          PNG or JPG · the first photo is the main one
         </p>
+      </div>
+    )
+  }
+
+  const addTile = (
+    <div
+      {...getRootProps()}
+      className={cn(
+        'flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed text-center transition-colors',
+        isDragActive ? 'border-ring bg-muted/50' : 'border-input hover:bg-muted/30'
       )}
+    >
+      <input {...getInputProps()} />
+      <Plus className="text-muted-foreground size-5" />
+      <span className="text-muted-foreground text-xs">Add</span>
     </div>
+  )
+
+  return (
+    <SortableImageGrid
+      images={images}
+      onReorder={commit}
+      onRemove={handleRemove}
+      addTile={addTile}
+    />
   )
 }

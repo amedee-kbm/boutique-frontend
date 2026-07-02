@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { createProduct, updateProduct, uploadProductImage } from '@/lib/actions/products'
 import { setProductFilterValue } from '@/lib/actions/product-filters'
 import { formatPrice } from '@/lib/format'
+import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import { addVariantGroup, addVariantOption } from '@/lib/actions/variants'
 import type { CategoryFilter } from '@/lib/db/queries'
 import { VariantStager, type StagedVariantGroup } from '@/components/admin/VariantStager'
@@ -78,7 +79,7 @@ function StatusSelector({
           </Button>
         }
       />
-      <DropdownMenuContent align="center">
+      <DropdownMenuContent align="end">
         <DropdownMenuRadioGroup
           value={visible ? 'visible' : 'hidden'}
           onValueChange={(value) => onChange(value === 'visible')}
@@ -101,6 +102,7 @@ export function ProductEditor({
   product?: Product
 }) {
   const router = useRouter()
+  const isDesktop = useMediaQuery('(min-width: 768px)')
   const [isPending, startTransition] = useTransition()
   const isEditing = Boolean(product)
 
@@ -166,7 +168,6 @@ export function ProductEditor({
       const formData = buildFormData()
 
       if (product) {
-        // Keep the existing slug so store links stay stable.
         formData.set('slug', product.slug)
         const result = await updateProduct(product.id, formData)
         if (result.error) {
@@ -213,82 +214,164 @@ export function ProductEditor({
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="mx-auto max-w-screen-xl">
       <EditorHeader
-        center={<StatusSelector visible={visible} onChange={setVisible} />}
+        center={isDesktop ? undefined : <StatusSelector visible={visible} onChange={setVisible} />}
         saveType="button"
         saving={isPending}
         onSave={handleSave}
         onCancel={() => router.push('/admin/products')}
       />
 
-      <SectionCard label="Media">
-        {product ? (
-          <ProductImageManager
-            key={product.images.map((img) => img.id).join(',')}
-            productId={product.id}
-            initialImages={product.images}
-            colorOptions={
-              product.variantGroups
-                .find((g) => g.name === 'Colour')
-                ?.options.map((o) => ({ id: o.id, value: o.value, hex: o.hex })) ?? []
-            }
-          />
-        ) : (
-          <MediaZone onChange={setFiles} />
-        )}
-      </SectionCard>
-
-      <div className="space-y-3">
-        <Input
-          aria-label="Product title"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Product title"
-          className="h-11 text-base"
-        />
-
-        <SectionCard className="p-0">
-          <div className="divide-y">
-            <FieldRow
-              label="Description"
-              value={description}
-              emptyLabel="Add description"
-              onClick={() => setDescOpen(true)}
-            />
-            <FieldRow
-              label="Category"
-              value={categoryName}
-              emptyLabel="Select category"
-              onClick={() => setCategoryOpen(true)}
-            />
-            <FieldRow
-              label="Price"
-              value={price ? formatPrice(price) : undefined}
-              emptyLabel="Set price"
-              onClick={() => {
-                setPriceDraft(price)
-                setPriceOpen(true)
-              }}
-            />
-            <FieldRow
-              label="Variants"
-              value={variantSummary}
-              emptyLabel="Add options (color, size, etc.)"
-              onClick={() => setVariantsOpen(true)}
-            />
-            {isEditing && categoryFilters.length > 0 && (
-              <FieldRow
-                label="Filters"
-                value={filterSummary}
-                emptyLabel="Tag for category filters"
-                onClick={() => setFiltersOpen(true)}
+      <div className="mt-5 space-y-5 md:mt-6 md:grid md:grid-cols-[1fr_288px] md:items-start md:gap-8 md:space-y-0">
+        {/* ── Main / left column ── */}
+        <div className="space-y-5">
+          <SectionCard label="Media">
+            {product ? (
+              <ProductImageManager
+                key={product.images.map((img) => img.id).join(',')}
+                productId={product.id}
+                initialImages={product.images}
+                colorOptions={
+                  product.variantGroups
+                    .find((g) => g.name === 'Colour')
+                    ?.options.map((o) => ({ id: o.id, value: o.value, hex: o.hex })) ?? []
+                }
               />
+            ) : (
+              <MediaZone onChange={setFiles} />
             )}
+          </SectionCard>
+
+          <Input
+            aria-label="Product title"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Product title"
+            className="h-11 text-base"
+          />
+
+          {isDesktop ? (
+            <>
+              <SectionCard label="Description">
+                <textarea
+                  aria-label="Product description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe the fabric, fit, sizes available…"
+                  className="min-h-40 w-full resize-y border-0 text-sm outline-none"
+                />
+              </SectionCard>
+
+              <SectionCard label="Category">
+                <select
+                  aria-label="Category"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                  <option value="">Uncategorized</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </SectionCard>
+
+              <SectionCard label="Price">
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground text-sm font-medium">RWF</span>
+                  <Input
+                    aria-label="Price"
+                    type="text"
+                    inputMode="numeric"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="5000"
+                    className="max-w-[200px]"
+                  />
+                </div>
+              </SectionCard>
+
+              <SectionCard className="p-0">
+                <div className="divide-y">
+                  <FieldRow
+                    label="Variants"
+                    value={variantSummary}
+                    emptyLabel="Add options (color, size, etc.)"
+                    onClick={() => setVariantsOpen(true)}
+                  />
+                  {isEditing && categoryFilters.length > 0 && (
+                    <FieldRow
+                      label="Filters"
+                      value={filterSummary}
+                      emptyLabel="Tag for category filters"
+                      onClick={() => setFiltersOpen(true)}
+                    />
+                  )}
+                </div>
+              </SectionCard>
+            </>
+          ) : (
+            <SectionCard className="p-0">
+              <div className="divide-y">
+                <FieldRow
+                  label="Description"
+                  value={description}
+                  emptyLabel="Add description"
+                  onClick={() => setDescOpen(true)}
+                />
+                <FieldRow
+                  label="Category"
+                  value={categoryName}
+                  emptyLabel="Select category"
+                  onClick={() => setCategoryOpen(true)}
+                />
+                <FieldRow
+                  label="Price"
+                  value={price ? formatPrice(price) : undefined}
+                  emptyLabel="Set price"
+                  onClick={() => {
+                    setPriceDraft(price)
+                    setPriceOpen(true)
+                  }}
+                />
+                <FieldRow
+                  label="Variants"
+                  value={variantSummary}
+                  emptyLabel="Add options (color, size, etc.)"
+                  onClick={() => setVariantsOpen(true)}
+                />
+                {isEditing && categoryFilters.length > 0 && (
+                  <FieldRow
+                    label="Filters"
+                    value={filterSummary}
+                    emptyLabel="Tag for category filters"
+                    onClick={() => setFiltersOpen(true)}
+                  />
+                )}
+              </div>
+            </SectionCard>
+          )}
+        </div>
+
+        {/* ── Right sidebar (desktop only) ── */}
+        {isDesktop && (
+          <div className="sticky top-16 flex flex-col gap-4">
+            <SectionCard label="Status">
+              <div className="flex items-center justify-between py-1">
+                <span className="text-muted-foreground text-sm">
+                  {visible ? 'Visible in store' : 'Hidden from store'}
+                </span>
+                <StatusSelector visible={visible} onChange={setVisible} />
+              </div>
+            </SectionCard>
           </div>
-        </SectionCard>
+        )}
       </div>
 
+      {/* SubScreens — mobile primary; Variants/Filters also available on desktop */}
       <SubScreen open={descOpen} onOpenChange={setDescOpen} title="Description">
         <textarea
           aria-label="Product description"
