@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { categoryFilterOptions, categoryFilters } from '@/lib/db/schema'
 import { categoryFilterOptionSchema, categoryFilterSchema } from './category-filters.schema'
 import { defaultFiltersForCategory } from '../consts/category-filter-presets'
+import { requireAdmin } from '@/features/auth/services/admin-guard'
 
 function nextPosition(rows: { position: number }[]) {
   return rows.length > 0 ? (rows[rows.length - 1]?.position ?? -1) + 1 : 0
@@ -32,6 +33,9 @@ export async function seedDefaultFilters(categoryId: string, categoryName: strin
 }
 
 export async function addCategoryFilter(categoryId: string, name: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, filter: null }
+
   const parsed = categoryFilterSchema.safeParse({ name })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', filter: null }
 
@@ -51,6 +55,9 @@ export async function addCategoryFilter(categoryId: string, name: string) {
 }
 
 export async function deleteCategoryFilter(id: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     await db.delete(categoryFilters).where(eq(categoryFilters.id, id))
   } catch {
@@ -61,6 +68,9 @@ export async function deleteCategoryFilter(id: string) {
 }
 
 export async function addCategoryFilterOption(filterId: string, value: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, option: null }
+
   const parsed = categoryFilterOptionSchema.safeParse({ value })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', option: null }
 
@@ -80,6 +90,9 @@ export async function addCategoryFilterOption(filterId: string, value: string) {
 }
 
 export async function deleteCategoryFilterOption(id: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     await db.delete(categoryFilterOptions).where(eq(categoryFilterOptions.id, id))
   } catch {

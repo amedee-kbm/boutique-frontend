@@ -1,6 +1,5 @@
 export { EnableNotifications } from './components/EnableNotifications'
 export { ServiceWorkerRegistrar } from './components/ServiceWorkerRegistrar'
-export { monogram as Monogram } from './lib/monogram'
-export { sendChatPush } from './lib/send'
+export { Monogram } from './lib/monogram'
 export * from './services/push'
 export * from './services/push.schema'

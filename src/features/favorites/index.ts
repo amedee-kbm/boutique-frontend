@@ -1,2 +1,2 @@
 export { FavoriteButton } from './components/FavoriteButton'
-export { useFavorites } from './hooks/useFavorites'
+export { FavoritesProvider, useFavorites } from './hooks/useFavorites'

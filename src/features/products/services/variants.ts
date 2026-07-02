@@ -5,13 +5,17 @@ import { and, asc, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { productVariantGroups, productVariantOptions } from '@/lib/db/schema'
-import { hexColorSchema, variantGroupSchema, variantOptionSchema } from './products.schema'
+import { hexColorSchema, variantGroupSchema, variantOptionSchema } from './variants.schema'
+import { requireAdmin } from '@/features/auth/services/admin-guard'
 
 async function nextPosition(rows: { position: number }[]) {
   return rows.length > 0 ? (rows[rows.length - 1]?.position ?? -1) + 1 : 0
 }
 
 export async function addVariantGroup(productId: string, name: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, group: null }
+
   const parsed = variantGroupSchema.safeParse({ name })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', group: null }
 
@@ -31,6 +35,9 @@ export async function addVariantGroup(productId: string, name: string) {
 }
 
 export async function reorderVariantGroups(productId: string, orderedIds: string[]) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     await Promise.all(
       orderedIds.map((id, index) =>
@@ -50,6 +57,9 @@ export async function reorderVariantGroups(productId: string, orderedIds: string
 }
 
 export async function deleteVariantGroup(id: string, productId: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     await db.delete(productVariantGroups).where(eq(productVariantGroups.id, id))
   } catch {
@@ -60,6 +70,9 @@ export async function deleteVariantGroup(id: string, productId: string) {
 }
 
 export async function addVariantOption(groupId: string, productId: string, value: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, option: null }
+
   const parsed = variantOptionSchema.safeParse({ value })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', option: null }
 
@@ -79,6 +92,9 @@ export async function addVariantOption(groupId: string, productId: string, value
 }
 
 export async function deleteVariantOption(id: string, productId: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     await db.delete(productVariantOptions).where(eq(productVariantOptions.id, id))
   } catch {
@@ -93,6 +109,9 @@ export async function setVariantOptionImage(
   productId: string,
   imageId: string | null
 ) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     await db
       .update(productVariantOptions)
@@ -106,6 +125,9 @@ export async function setVariantOptionImage(
 }
 
 export async function setVariantOptionHex(optionId: string, productId: string, hex: string | null) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   if (hex !== null) {
     const parsed = hexColorSchema.safeParse(hex)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid colour' }

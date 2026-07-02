@@ -1,21 +1,17 @@
 import { redirect } from 'next/navigation'
 
-import { createClient } from '@/lib/supabase/server'
+import { getAdminUser } from '@/features/auth/services/admin-guard'
 import { AdminSidebar } from '@/widgets/admin-nav'
 import { AdminMobileNav } from '@/widgets/admin-nav'
 
 export default async function AdminPanelLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user, isAdmin } = await getAdminUser()
 
   if (!user) redirect('/admin/login')
 
   // Customers are also non-anonymous users now, so authentication alone is not
   // enough — only seller accounts seeded in public.admins may enter. Send
   // everyone else to the storefront (not /admin/login, which would loop).
-  const { data: isAdmin } = await supabase.rpc('is_admin')
   if (!isAdmin) redirect('/')
 
   return (

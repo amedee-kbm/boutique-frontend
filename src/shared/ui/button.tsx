@@ -50,7 +50,7 @@ function Button({
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
-    render?: React.ReactElement
+    render?: React.ReactElement<{ children?: React.ReactNode }>
   }) {
   const Comp = render ? Slot.Root : asChild ? Slot.Root : 'button'
 

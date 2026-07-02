@@ -7,7 +7,8 @@ import { db } from '@/lib/db'
 import { productImages, products } from '@/lib/db/schema'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { productFormSchema } from './products.schema'
-import { sendChatPush } from '@/features/pwa'
+import { sendChatPush } from '@/features/pwa/lib/send'
+import { requireAdmin } from '@/features/auth/services/admin-guard'
 
 function slugify(str: string): string {
   return str
@@ -19,6 +20,9 @@ function slugify(str: string): string {
 }
 
 export async function createProduct(formData: FormData) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, id: null }
+
   const raw = {
     name: formData.get('name'),
     slug: formData.get('slug') || slugify(String(formData.get('name'))),
@@ -54,6 +58,9 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   const raw = {
     name: formData.get('name'),
     slug: formData.get('slug'),
@@ -91,17 +98,26 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function toggleProductVisibility(id: string, visible: boolean) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
   await db.update(products).set({ visible, updatedAt: new Date() }).where(eq(products.id, id))
   revalidatePath('/admin/products')
+  return { error: null }
 }
 
 export async function deleteProduct(id: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
   // Images are cascade-deleted by DB constraint
   await db.delete(products).where(eq(products.id, id))
   revalidatePath('/admin/products')
+  return { error: null }
 }
 
 export async function uploadProductImage(productId: string, formData: FormData, position?: number) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, url: null }
+
   const file = formData.get('file') as File | null
   if (!file) return { error: 'No file provided', url: null }
 
@@ -146,6 +162,9 @@ export async function uploadProductImage(productId: string, formData: FormData, 
 }
 
 export async function setProductImageOption(imageId: string, optionId: string | null) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   const rows = await db
     .select({ productId: productImages.productId })
     .from(productImages)
@@ -161,6 +180,9 @@ export async function setProductImageOption(imageId: string, optionId: string | 
 }
 
 export async function deleteProductImage(imageId: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   const rows = await db
     .select({ url: productImages.url, productId: productImages.productId })
     .from(productImages)
@@ -185,6 +207,9 @@ export async function deleteProductImage(imageId: string) {
 }
 
 export async function reorderProductImages(orderedIds: string[]) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   await Promise.all(
     orderedIds.map((id, position) =>
       db.update(productImages).set({ position }).where(eq(productImages.id, id))
@@ -202,6 +227,7 @@ export async function reorderProductImages(orderedIds: string[]) {
       revalidatePath(`/admin/products/${first[0].productId}/edit`)
     }
   }
+  return { error: null }
 }
 
 export async function bulkUpdateProducts(
@@ -214,6 +240,9 @@ export async function bulkUpdateProducts(
     visible: boolean
   }[]
 ) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   if (updates.length === 0) return { error: null }
 
   const trimmed = updates.map((u) => ({ ...u, name: u.name.trim() }))
@@ -237,6 +266,9 @@ export async function bulkUpdateProducts(
 }
 
 export async function sendAdminMessage(sessionId: string, content: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, message: null }
+
   const trimmed = content.trim()
   if (!trimmed) return { error: 'Message is empty', message: null }
 

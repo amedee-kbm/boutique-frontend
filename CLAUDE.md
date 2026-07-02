@@ -1,5 +1,7 @@
 # Zita Boutique — CLAUDE.md
 
+N.B. A LOT HAS CHANGED NOW AND SOME THINGS MAY NOT STILL APPLY
+
 ## Project Overview
 
 Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells affordable/bargain fashion. There is **no online payment** — the store closes sales the WhatsApp-Shop / cash-on-delivery way. Customers save pieces to a **Selection**, then either **place a no-pay order** (their selection plus name, phone and delivery address) that the seller works from an admin **Orders inbox**, or open **Tubaze** — a live chat with the seller for questions. Order is the primary close-the-sale path; Tubaze is for Q&A. No money is handled in-app; the seller arranges payment and delivery directly with the customer.

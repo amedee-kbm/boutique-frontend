@@ -2,12 +2,18 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { AuthService } from '../services/auth.service'
 
-export function LogoutButton() {
+interface LogoutButtonProps {
+  className?: string
+}
+
+export function LogoutButton({ className }: LogoutButtonProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -28,9 +34,10 @@ export function LogoutButton() {
       variant="ghost"
       onClick={handleLogout}
       disabled={isLoading}
-      className="w-full justify-start text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
+      className={cn('w-full justify-start', className)}
     >
-      {isLoading ? 'Logging out…' : 'Log out'}
+      <LogOut className="size-4 shrink-0" />
+      <span>{isLoading ? 'Signing out…' : 'Sign out'}</span>
     </Button>
   )
 }

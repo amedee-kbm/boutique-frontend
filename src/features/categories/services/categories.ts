@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { categories } from '@/lib/db/schema'
 import { categoryFormSchema } from './categories.schema'
 import { seedDefaultFilters } from './category-filters'
+import { requireAdmin } from '@/features/auth/services/admin-guard'
 
 function slugify(str: string): string {
   return str
@@ -18,6 +19,9 @@ function slugify(str: string): string {
 }
 
 export async function createCategory(formData: FormData) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   const raw = {
     name: formData.get('name'),
     slug: formData.get('slug') || slugify(String(formData.get('name'))),
@@ -43,6 +47,9 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(id: string, formData: FormData) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   const raw = {
     name: formData.get('name'),
     slug: formData.get('slug'),
@@ -64,6 +71,9 @@ export async function updateCategory(id: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     await db.delete(categories).where(eq(categories.id, id))
   } catch {
