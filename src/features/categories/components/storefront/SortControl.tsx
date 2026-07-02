@@ -3,8 +3,8 @@
 import { ChevronDown } from 'lucide-react'
 import { useQueryStates } from 'nuqs'
 
-import { SORT_OPTIONS, type SortOption } from '@/lib/storefront/filters'
-import { filterParsers } from '@/lib/storefront/filter-params'
+import { SORT_OPTIONS, type SortOption } from '@/features/categories/lib/filters'
+import { filterParsers } from '@/features/categories/lib/filter-params'
 import { Button } from '@/shared/ui'
 import {
   DropdownMenu,

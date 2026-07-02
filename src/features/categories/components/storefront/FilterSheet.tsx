@@ -10,8 +10,8 @@ import {
   optionFacetMap,
   PRICE_BUCKETS,
   type FilterSelection,
-} from '@/lib/storefront/filters'
-import { filterParsers } from '@/lib/storefront/filter-params'
+} from '@/features/categories/lib/filters'
+import { filterParsers } from '@/features/categories/lib/filter-params'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/shared/ui'
