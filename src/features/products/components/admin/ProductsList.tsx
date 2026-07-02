@@ -10,8 +10,8 @@ import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
 import { Switch } from '@/shared/ui'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
-import { FilterChips } from '@/shared/components/admin/ui/FilterChips'
-import { ListRow } from '@/shared/components/admin/ui/ListRow'
+import { FilterChips } from '@/features/admin/ui'
+import { ListRow } from '@/features/admin/ui'
 
 interface Product {
   id: string

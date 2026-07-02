@@ -13,7 +13,7 @@ import {
   uploadProductImage,
 } from '@/features/products'
 import { cn } from '@/shared/lib/utils'
-import { SortableImageGrid } from '@/shared/components/admin/ui/SortableImageGrid'
+import { SortableImageGrid } from '@/features/admin/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,

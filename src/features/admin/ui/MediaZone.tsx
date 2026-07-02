@@ -5,7 +5,7 @@ import { useDropzone } from 'react-dropzone'
 import { ImagePlus, Plus } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
-import { SortableImageGrid } from '@/shared/components/admin/ui/SortableImageGrid'
+import { SortableImageGrid } from './SortableImageGrid'
 
 interface StagedImage {
   id: string
