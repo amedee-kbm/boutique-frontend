@@ -3,9 +3,9 @@
 import { X } from 'lucide-react'
 import { useQueryStates } from 'nuqs'
 
-import type { CategoryFilter } from '@/lib/db/queries'
-import { bucketById } from '../../lib/filters'
-import { filterParsers } from '../../lib/filter-params'
+import type { CategoryFilter } from '@/shared/types'
+import { bucketById } from '../lib/filters'
+import { filterParsers } from '../lib/filter-params'
 
 export function AppliedChips({ categoryFilters }: { categoryFilters: CategoryFilter[] }) {
   const [state, setState] = useQueryStates(filterParsers, { shallow: false, history: 'push' })

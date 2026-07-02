@@ -1,5 +1,5 @@
-import type { CategoryFilter } from '@/lib/db/queries'
-import type { CategoryProductFilters, CategoryProductMeta } from '@/lib/db/queries'
+import type { CategoryFilter } from '@/shared/types'
+import type { CategoryProductFilters, CategoryProductMeta } from '../services/category-queries'
 
 export type SortOption = 'newest' | 'price-asc' | 'price-desc'
 

@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { getAllCategories, getCategoryFilters } from '@/lib/db/queries'
+import {
+  getAllCategories,
+  getCategoryFilters,
+} from '@/features/admin/categories/services/category-queries'
 import { getProductById } from '@/features/admin/products/services/product-queries'
 import { ProductEditor } from '@/features/admin/products'
 

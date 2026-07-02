@@ -9,8 +9,8 @@ import {
   addCategoryFilterOption,
   deleteCategoryFilter,
   deleteCategoryFilterOption,
-} from '@/features/categories'
-import type { CategoryFilter } from '@/lib/db/queries'
+} from '@/features/admin/categories'
+import type { CategoryFilter } from '@/shared/types'
 import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
 import { Badge } from '@/shared/ui'

@@ -4,14 +4,15 @@ import { useMemo, useState } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
 import { useQueryStates } from 'nuqs'
 
-import type { CategoryFilter, CategoryProductMeta } from '@/lib/db/queries'
+import type { CategoryFilter } from '@/shared/types'
+import type { CategoryProductMeta } from '../services/category-queries'
 import {
   countMatches,
   optionFacetMap,
   PRICE_BUCKETS,
   type FilterSelection,
-} from '@/features/categories/lib/filters'
-import { filterParsers } from '@/features/categories/lib/filter-params'
+} from '@/features/storefront/categories/lib/filters'
+import { filterParsers } from '@/features/storefront/categories/lib/filter-params'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/shared/ui'

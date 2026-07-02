@@ -2,13 +2,13 @@
 
 import { Pencil, Trash2 } from 'lucide-react'
 
-import { deleteCategory } from '@/features/categories'
+import { deleteCategory } from '@/features/admin/categories'
 import { Button } from '@/shared/ui'
 import { Badge } from '@/shared/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui'
-import { CategoryDialog } from '@/features/categories'
+import { CategoryDialog } from '@/features/admin/categories'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
-import type { CategoryFilter } from '@/lib/db/queries'
+import type { CategoryFilter } from '@/shared/types'
 
 interface Category {
   id: string

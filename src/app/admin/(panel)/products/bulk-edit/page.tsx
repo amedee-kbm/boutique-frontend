@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { getAllCategories } from '@/lib/db/queries'
+import { getAllCategories } from '@/features/admin/categories/services/category-queries'
 import { getAllProducts } from '@/features/admin/products/services/product-queries'
 import { ProductsBulkEdit } from '@/features/admin/products'
 

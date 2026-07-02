@@ -6,12 +6,12 @@ import {
   getCategoryFilters,
   getCategoryProductMeta,
   getCategoryProducts,
-} from '@/lib/db/queries'
-import { parseFilterParams, toQueryFilters } from '@/features/categories'
+} from '@/features/storefront/categories/services/category-queries'
+import { parseFilterParams, toQueryFilters } from '@/features/storefront/categories'
 import { GridCard } from '@/features/storefront/products'
-import { FilterSheet } from '@/features/categories'
-import { SortControl } from '@/features/categories'
-import { AppliedChips } from '@/features/categories'
+import { FilterSheet } from '@/features/storefront/categories'
+import { SortControl } from '@/features/storefront/categories'
+import { AppliedChips } from '@/features/storefront/categories'
 
 type SearchParams = Record<string, string | string[] | undefined>
 

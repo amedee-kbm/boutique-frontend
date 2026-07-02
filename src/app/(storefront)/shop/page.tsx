@@ -1,5 +1,5 @@
-import { getCategoryIndex } from '@/lib/db/queries'
-import { CategoryBanner } from '@/features/categories'
+import { getCategoryIndex } from '@/features/storefront/categories/services/category-queries'
+import { CategoryBanner } from '@/features/storefront/categories'
 
 export const metadata = { title: 'Shop — Zita Boutique' }
 

@@ -4,9 +4,9 @@ import { useState, useTransition } from 'react'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { createCategory, updateCategory } from '@/features/categories'
-import type { CategoryFilter } from '@/lib/db/queries'
-import { CategoryFilterManager } from '@/features/categories'
+import { createCategory, updateCategory } from '@/features/admin/categories'
+import type { CategoryFilter } from '@/shared/types'
+import { CategoryFilterManager } from '@/features/admin/categories'
 import { Button } from '@/shared/ui'
 import {
   Dialog,

@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
 
-import { getAllCategories, getAllCategoryFilters } from '@/lib/db/queries'
+import {
+  getAllCategories,
+  getAllCategoryFilters,
+} from '@/features/admin/categories/services/category-queries'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { CategoryDialog } from '@/features/categories'
-import { CategoriesTable } from '@/features/categories'
+import { CategoryDialog } from '@/features/admin/categories'
+import { CategoriesTable } from '@/features/admin/categories'
 
 export const metadata: Metadata = { title: 'Categories — Zita Boutique' }
 
