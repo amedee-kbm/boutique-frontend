@@ -1,9 +1,13 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
-import { getCategorySwipeList, getProductBySlug, type SwipeCard } from '@/lib/db/queries'
-import { buildProductDetailData } from '@/features/products'
-import { ProductSwiper } from '@/features/products'
+import {
+  getCategorySwipeList,
+  getProductBySlug,
+  type SwipeCard,
+} from '@/features/storefront/products/services/product-queries'
+import { buildProductDetailData } from '@/features/storefront/products'
+import { ProductSwiper } from '@/features/storefront/products'
 
 type SearchParams = Record<string, string | string[] | undefined>
 

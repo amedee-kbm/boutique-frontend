@@ -32,7 +32,7 @@ import {
   isPresetGroup,
   type VariantPresetSection,
   type VariantPresetType,
-} from '@/features/products'
+} from '../consts/variant-presets'
 
 export interface BuilderOption {
   id: string

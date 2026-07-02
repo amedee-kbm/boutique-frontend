@@ -7,7 +7,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
-import { bulkUpdateProducts } from '@/features/products'
+import { bulkUpdateProducts } from '@/features/admin/products'
 import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
 import { Switch } from '@/shared/ui'

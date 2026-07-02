@@ -11,12 +11,17 @@ import {
   orderItems,
   orders,
   productFilterValues,
-  productImages,
-  products,
   productVariantGroups,
   productVariantOptions,
+  products,
 } from '@/lib/db/schema'
 import type { InquiryItem } from '@/features/chat'
+// StoreCard is owned by storefront/products; the category grid returns the same card.
+import {
+  hexesSql,
+  thumbnailSql,
+  type StoreCard,
+} from '@/features/storefront/products/services/product-queries'
 
 export interface CategoryFilter {
   id: string
@@ -143,116 +148,11 @@ export async function getAllCategoryFilters() {
   return groupFilters(filters, options)
 }
 
-export async function getAllProducts() {
-  return db
-    .select({
-      id: products.id,
-      name: products.name,
-      slug: products.slug,
-      price: products.price,
-      visible: products.visible,
-      createdAt: products.createdAt,
-      categoryId: products.categoryId,
-      categoryName: categories.name,
-      thumbnail: sql<string | null>`(
-        SELECT url FROM product_images
-        WHERE product_id = ${products.id}
-        ORDER BY position ASC
-        LIMIT 1
-      )`.as('thumbnail'),
-      variantCount: sql<number>`(
-        SELECT COUNT(*)::int FROM product_variant_options o
-        JOIN product_variant_groups g ON g.id = o.group_id
-        WHERE g.product_id = ${products.id}
-      )`.as('variant_count'),
-    })
-    .from(products)
-    .leftJoin(categories, eq(products.categoryId, categories.id))
-    .orderBy(desc(products.createdAt))
-}
-
-export async function getProductById(id: string) {
-  const rows = await db
-    .select({
-      id: products.id,
-      name: products.name,
-      slug: products.slug,
-      description: products.description,
-      price: products.price,
-      visible: products.visible,
-      categoryId: products.categoryId,
-      createdAt: products.createdAt,
-      updatedAt: products.updatedAt,
-    })
-    .from(products)
-    .where(eq(products.id, id))
-    .limit(1)
-
-  if (!rows[0]) return null
-
-  const [images, groups, filterValues] = await Promise.all([
-    db
-      .select()
-      .from(productImages)
-      .where(eq(productImages.productId, id))
-      .orderBy(asc(productImages.position)),
-    db
-      .select({
-        id: productVariantGroups.id,
-        name: productVariantGroups.name,
-        position: productVariantGroups.position,
-      })
-      .from(productVariantGroups)
-      .where(eq(productVariantGroups.productId, id))
-      .orderBy(asc(productVariantGroups.position)),
-    db
-      .select({ optionId: productFilterValues.optionId })
-      .from(productFilterValues)
-      .where(eq(productFilterValues.productId, id)),
-  ])
-
-  const filterOptionIds = filterValues.map((v) => v.optionId)
-
-  const groupIds = groups.map((g) => g.id)
-  const options = groupIds.length
-    ? await db
-        .select({
-          id: productVariantOptions.id,
-          groupId: productVariantOptions.groupId,
-          value: productVariantOptions.value,
-          imageId: productVariantOptions.imageId,
-          hex: productVariantOptions.hex,
-        })
-        .from(productVariantOptions)
-        .where(inArray(productVariantOptions.groupId, groupIds))
-        .orderBy(asc(productVariantOptions.position))
-    : []
-
-  const variantGroups = groups.map((group) => ({
-    id: group.id,
-    name: group.name,
-    options: options
-      .filter((o) => o.groupId === group.id)
-      .map((o) => ({ id: o.id, value: o.value, imageId: o.imageId, hex: o.hex })),
-  }))
-
-  return { ...rows[0], images, variantGroups, filterOptionIds }
-}
-
 // ============================================================
-// Storefront read layer
+// Storefront category read layer
 // Drizzle bypasses RLS (connects as table owner), so every read here MUST
 // explicitly filter products.visible = true.
 // ============================================================
-
-export interface StoreCard {
-  id: string
-  name: string
-  slug: string
-  price: string
-  thumbnail: string | null
-  hexes: string[]
-}
 
 export interface CategoryProductFilters {
   optionIds?: string[]
@@ -260,83 +160,6 @@ export interface CategoryProductFilters {
   minPrice?: number
   maxPrice?: number
   sort?: 'newest' | 'price-asc' | 'price-desc'
-}
-
-// Outer table is referenced literally as products.id (not interpolated) because
-// these standalone sql fragments otherwise render the column unqualified as "id",
-// which is ambiguous inside the joined subqueries.
-const thumbnailSql = sql<string | null>`(
-  SELECT url FROM product_images
-  WHERE product_id = products.id
-  ORDER BY position ASC
-  LIMIT 1
-)`.as('thumbnail')
-
-// Distinct colour swatch hexes for a product, in option order.
-const hexesSql = sql<string[]>`coalesce((
-  SELECT array_agg(o.hex ORDER BY o.position)
-  FROM product_variant_options o
-  JOIN product_variant_groups g ON g.id = o.group_id
-  WHERE g.product_id = products.id
-    AND g.name = 'Colour'
-    AND o.hex IS NOT NULL
-), '{}')`.as('hexes')
-
-// Size option values for a product, in option order. Home cards need these so
-// the "+" quick-add can open a size sheet without a second round-trip.
-const sizesSql = sql<string[]>`coalesce((
-  SELECT array_agg(o.value ORDER BY o.position)
-  FROM product_variant_options o
-  JOIN product_variant_groups g ON g.id = o.group_id
-  WHERE g.product_id = products.id
-    AND g.name = 'Size'
-), '{}')`.as('sizes')
-
-export interface HomeCard extends StoreCard {
-  sizes: string[]
-}
-
-export async function getHomeFeed(limit = 20): Promise<HomeCard[]> {
-  return db
-    .select({
-      id: products.id,
-      name: products.name,
-      slug: products.slug,
-      price: products.price,
-      thumbnail: thumbnailSql,
-      hexes: hexesSql,
-      sizes: sizesSql,
-    })
-    .from(products)
-    .where(eq(products.visible, true))
-    .orderBy(desc(products.createdAt))
-    .limit(limit)
-}
-
-export interface HomeFilter {
-  label: string
-  href: string
-}
-
-// The home top filter strip. P7 (admin merchandising) will make these entries
-// admin-editable via a home_filters table; until then this is the seam — it
-// falls back to the visible category index so the strip is never empty.
-export async function getHomeFilters(): Promise<HomeFilter[]> {
-  const rows = await db
-    .select({
-      name: categories.name,
-      slug: categories.slug,
-      productCount: sql<number>`(
-        SELECT COUNT(*)::int FROM products p
-        WHERE p.category_id = categories.id AND p.visible = true
-      )`.as('product_count'),
-    })
-    .from(categories)
-    .orderBy(asc(categories.name))
-
-  return rows
-    .filter((r) => r.productCount > 0)
-    .map((r) => ({ label: r.name, href: `/category/${r.slug}` }))
 }
 
 export async function getCategoryIndex() {
@@ -476,97 +299,6 @@ export async function getCategoryProductMeta(categoryId: string): Promise<Catego
     })
     .from(products)
     .where(and(eq(products.visible, true), eq(products.categoryId, categoryId)))
-}
-
-export async function getProductBySlug(slug: string) {
-  const rows = await db
-    .select({
-      id: products.id,
-      name: products.name,
-      slug: products.slug,
-      description: products.description,
-      price: products.price,
-      categoryId: products.categoryId,
-    })
-    .from(products)
-    .where(and(eq(products.slug, slug), eq(products.visible, true)))
-    .limit(1)
-
-  if (!rows[0]) return null
-
-  const product = rows[0]
-
-  const [images, groups] = await Promise.all([
-    db
-      .select({
-        id: productImages.id,
-        url: productImages.url,
-        alt: productImages.alt,
-        optionId: productImages.optionId,
-      })
-      .from(productImages)
-      .where(eq(productImages.productId, product.id))
-      .orderBy(asc(productImages.position)),
-    db
-      .select({
-        id: productVariantGroups.id,
-        name: productVariantGroups.name,
-        position: productVariantGroups.position,
-      })
-      .from(productVariantGroups)
-      .where(eq(productVariantGroups.productId, product.id))
-      .orderBy(asc(productVariantGroups.position)),
-  ])
-
-  const groupIds = groups.map((g) => g.id)
-  const options = groupIds.length
-    ? await db
-        .select({
-          id: productVariantOptions.id,
-          groupId: productVariantOptions.groupId,
-          value: productVariantOptions.value,
-          imageId: productVariantOptions.imageId,
-          hex: productVariantOptions.hex,
-        })
-        .from(productVariantOptions)
-        .where(inArray(productVariantOptions.groupId, groupIds))
-        .orderBy(asc(productVariantOptions.position))
-    : []
-
-  const variantGroups = groups.map((group) => ({
-    id: group.id,
-    name: group.name,
-    options: options
-      .filter((o) => o.groupId === group.id)
-      .map((o) => ({ id: o.id, value: o.value, imageId: o.imageId, hex: o.hex })),
-  }))
-
-  return { ...product, images, variantGroups }
-}
-
-export interface SwipeCard {
-  slug: string
-  name: string
-  price: string
-  thumbnail: string | null
-}
-
-// The ordered same-category product list that backs the PDP swipe pager (P4):
-// the main area swipes between these, the thumbnail strip mirrors them. Returns
-// [] when the product has no category so the pager degrades to a single product.
-// Order matches the category feed (newest first) so swipe + strip stay aligned.
-export async function getCategorySwipeList(categoryId: string | null): Promise<SwipeCard[]> {
-  if (!categoryId) return []
-  return db
-    .select({
-      slug: products.slug,
-      name: products.name,
-      price: products.price,
-      thumbnail: thumbnailSql,
-    })
-    .from(products)
-    .where(and(eq(products.visible, true), eq(products.categoryId, categoryId)))
-    .orderBy(desc(products.createdAt))
 }
 
 export type OrderStatus = 'new' | 'contacted' | 'done'

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 
 import { formatPrice } from '@/shared/lib/format'
-import { ProductThumb } from '@/features/products'
+import { ProductThumb } from '@/shared/components/ProductThumb'
 
 export interface InquiryItem {
   id: string

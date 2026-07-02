@@ -11,7 +11,7 @@ import {
   reorderProductImages,
   setProductImageOption,
   uploadProductImage,
-} from '@/features/products'
+} from '@/features/admin/products'
 import { cn } from '@/shared/lib/utils'
 import { SortableImageGrid } from '@/features/admin/ui'
 import {

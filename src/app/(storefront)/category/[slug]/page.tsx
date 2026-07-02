@@ -8,7 +8,7 @@ import {
   getCategoryProducts,
 } from '@/lib/db/queries'
 import { parseFilterParams, toQueryFilters } from '@/features/categories'
-import { GridCard } from '@/features/products'
+import { GridCard } from '@/features/storefront/products'
 import { FilterSheet } from '@/features/categories'
 import { SortControl } from '@/features/categories'
 import { AppliedChips } from '@/features/categories'

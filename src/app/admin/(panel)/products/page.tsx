@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Plus, Table2 } from 'lucide-react'
 
-import { getAllProducts } from '@/lib/db/queries'
+import { getAllProducts } from '@/features/admin/products/services/product-queries'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Button } from '@/shared/ui'
-import { ProductsList } from '@/features/products'
+import { ProductsList } from '@/features/admin/products'
 
 export const metadata: Metadata = { title: 'Products — Zita Boutique' }
 

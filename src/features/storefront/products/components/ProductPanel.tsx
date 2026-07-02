@@ -8,7 +8,7 @@ import { cn } from '@/shared/lib/utils'
 import { formatPrice } from '@/shared/lib/format'
 import { ProductGallery, type GalleryHandle } from './ProductGallery'
 import { ColorStrip } from './ColorStrip'
-import type { ProductDetailData } from '../../lib/product-detail'
+import type { ProductDetailData } from '../lib/product-detail'
 
 // One product within the swipe pager: its vertically-scrolled gallery plus
 // name, price, inline colour squares and description. The purchase chrome

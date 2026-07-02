@@ -5,7 +5,7 @@ import { Heart } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/shared/lib/utils'
-import type { StoreCard } from '@/lib/db/queries'
+import type { StoreCard } from '@/features/storefront/products'
 import { useFavorites } from '@/features/favorites'
 
 // The save/favorite heart. Favoriting is account-gated (Zara-style): a guest tap

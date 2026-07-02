@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 
-import { getAllCategories, getAllProducts } from '@/lib/db/queries'
-import { ProductsBulkEdit } from '@/features/products'
+import { getAllCategories } from '@/lib/db/queries'
+import { getAllProducts } from '@/features/admin/products/services/product-queries'
+import { ProductsBulkEdit } from '@/features/admin/products'
 
 export const metadata: Metadata = { title: 'Bulk Edit — Zita Boutique' }
 

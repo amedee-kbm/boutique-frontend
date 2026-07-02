@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 
 import { cn } from '@/shared/lib/utils'
-import { ProductThumb } from '@/features/products'
+import { ProductThumb } from '@/shared/components/ProductThumb'
 
 interface ListRowProps {
   href?: string

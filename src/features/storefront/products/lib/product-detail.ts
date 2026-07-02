@@ -1,4 +1,4 @@
-import type { GallerySection } from '@/features/products'
+import type { GallerySection } from '../components/ProductGallery'
 
 export interface DetailColour {
   optionId: string

@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { deleteProduct, toggleProductVisibility } from '@/features/products'
+import { deleteProduct, toggleProductVisibility } from '@/features/admin/products'
 import { formatPrice } from '@/shared/lib/format'
 import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'

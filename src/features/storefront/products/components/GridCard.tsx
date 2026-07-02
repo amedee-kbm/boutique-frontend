@@ -2,8 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 import { formatPrice } from '@/shared/lib/format'
-import type { StoreCard } from '@/lib/db/queries'
-import { ColorSquares } from '@/features/products'
+import type { StoreCard } from '@/features/storefront/products'
+import { ColorSquares } from './ColorSquares'
 import { FavoriteButton } from '@/features/favorites'
 
 export function GridCard({ product }: { product: StoreCard }) {

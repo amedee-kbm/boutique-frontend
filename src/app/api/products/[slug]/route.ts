@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
-import { getProductBySlug } from '@/lib/db/queries'
-import { buildProductDetailData } from '@/features/products'
+import { getProductBySlug } from '@/features/storefront/products/services/product-queries'
+import { buildProductDetailData } from '@/features/storefront/products'
 
 // On-demand PDP detail for a neighbouring product, fetched as the swipe pager
 // (P4) approaches a slide. Mirrors the RSC page's mapping via the shared builder.

@@ -1,8 +1,11 @@
 import Link from 'next/link'
 
-import { getHomeFeed, getHomeFilters } from '@/lib/db/queries'
-import { isFullBleed } from '@/features/products'
-import { FeedCard } from '@/features/products'
+import {
+  getHomeFeed,
+  getHomeFilters,
+} from '@/features/storefront/products/services/product-queries'
+import { isFullBleed } from '@/features/storefront/products'
+import { FeedCard } from '@/features/storefront/products'
 
 // Catalog changes in the admin must show immediately; don't serve a build snapshot.
 export const dynamic = 'force-dynamic'

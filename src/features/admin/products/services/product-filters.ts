@@ -5,12 +5,16 @@ import { and, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { productFilterValues } from '@/lib/db/schema'
+import { requireAdmin } from '@/features/auth/services/admin-guard'
 
 export async function setProductFilterValue(
   productId: string,
   optionId: string,
   selected: boolean
 ) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+
   try {
     if (selected) {
       await db.insert(productFilterValues).values({ productId, optionId }).onConflictDoNothing()

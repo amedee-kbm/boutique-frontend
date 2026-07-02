@@ -13,7 +13,7 @@ import { useCustomer } from '@/features/auth'
 import { orderDetailsSchema } from '@/features/orders'
 import { placeOrder, getMyLatestOrderDetails } from '@/features/orders'
 import { Button, Input, Textarea } from '@/shared/ui'
-import { ProductThumb } from '@/features/products'
+import { ProductThumb } from '@/shared/components/ProductThumb'
 
 type Stage = 'list' | 'details' | 'done'
 type FieldErrors = Partial<Record<'name' | 'phone' | 'address', string>>

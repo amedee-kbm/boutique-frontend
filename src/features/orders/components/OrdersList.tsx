@@ -12,7 +12,7 @@ import { updateOrderStatus } from '@/features/orders'
 import { cn } from '@/shared/lib/utils'
 import { FilterChips } from '@/features/admin/ui'
 import { SubScreen } from '@/features/admin/ui'
-import { ProductThumb } from '@/features/products'
+import { ProductThumb } from '@/shared/components/ProductThumb'
 import { Badge } from '@/shared/ui'
 
 type Filter = 'all' | OrderStatus

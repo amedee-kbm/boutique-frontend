@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { addToBag, bagKey } from '@/features/bag'
-import type { HomeCard } from '@/lib/db/queries'
+import type { HomeCard } from '@/features/storefront/products'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui'
 
 // Bottom-right "+" on a home card. With no sizes it drops straight into the Bag;

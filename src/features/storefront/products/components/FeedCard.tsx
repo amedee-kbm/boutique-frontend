@@ -3,9 +3,9 @@ import Image from 'next/image'
 
 import { cn } from '@/shared/lib/utils'
 import { formatPrice } from '@/shared/lib/format'
-import type { HomeCard } from '@/lib/db/queries'
-import { ColorSquares } from '@/features/products'
-import { QuickAddButton } from '@/features/products'
+import type { HomeCard } from '@/features/storefront/products'
+import { ColorSquares } from './ColorSquares'
+import { QuickAddButton } from './QuickAddButton'
 
 export function FeedCard({
   product,

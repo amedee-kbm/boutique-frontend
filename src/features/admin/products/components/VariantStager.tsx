@@ -1,6 +1,6 @@
 'use client'
 
-import { VariantBuilder } from '@/features/products'
+import { VariantBuilder } from './VariantBuilder'
 
 export interface StagedVariantOption {
   id: string

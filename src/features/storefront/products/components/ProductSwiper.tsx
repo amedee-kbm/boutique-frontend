@@ -16,8 +16,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { ProductPanel } from './ProductPanel'
 import { HERO_HEIGHT } from './ProductGallery'
 import { BagButton } from '@/features/bag'
-import type { SwipeCard } from '@/lib/db/queries'
-import { firstColourId, type ProductDetailData, type DetailColour } from '../../lib/product-detail'
+import type { SwipeCard } from '@/features/storefront/products'
+import { firstColourId, type ProductDetailData, type DetailColour } from '../lib/product-detail'
 
 const HINT_KEY = 'zita-pdp-swipe-hint'
 const subscribeMount = () => () => {}

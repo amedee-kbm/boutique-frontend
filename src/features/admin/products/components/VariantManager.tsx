@@ -12,10 +12,10 @@ import {
   reorderVariantGroups,
   setVariantOptionHex,
   setVariantOptionImage,
-} from '@/features/products'
-import { defaultHexForName } from '@/features/products'
-import { ProductThumb } from '@/features/products'
-import { VariantBuilder, type BuilderOption } from '@/features/products'
+} from '@/features/admin/products'
+import { defaultHexForName } from '../consts/variant-presets'
+import { ProductThumb } from '@/shared/components/ProductThumb'
+import { VariantBuilder, type BuilderOption } from './VariantBuilder'
 import {
   DropdownMenu,
   DropdownMenuContent,
