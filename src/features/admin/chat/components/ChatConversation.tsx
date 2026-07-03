@@ -5,12 +5,13 @@ import { format } from 'date-fns'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { sendAdminMessage } from '@/features/admin/products'
+import { sendAdminMessage } from '@/features/admin/chat'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
-import { ProductInquiryCard, type InquiryItem } from '@/features/chat'
+import { ProductInquiryCard } from '@/shared/components/ProductInquiryCard'
+import type { InquiryItem } from '@/shared/types'
 
 export interface ChatMessage {
   id: string

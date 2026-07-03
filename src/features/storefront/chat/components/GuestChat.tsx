@@ -5,12 +5,12 @@ import { format } from 'date-fns'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { useGuestName, useGuestReady } from '../../hooks/guest'
-import { startGuestChat } from '../../hooks/funnel'
-import { useGuestChat } from '../../hooks/useGuestChat'
+import { useGuestName, useGuestReady } from '../hooks/guest'
+import { startGuestChat } from '../hooks/funnel'
+import { useGuestChat } from '../hooks/useGuestChat'
 import { cn } from '@/shared/lib/utils'
 import { Button, Input } from '@/shared/ui'
-import { ProductInquiryCard } from './ProductInquiryCard'
+import { ProductInquiryCard } from '@/shared/components/ProductInquiryCard'
 
 function StartChat() {
   const persistedName = useGuestName()

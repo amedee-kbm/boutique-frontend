@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Home, ShoppingBag, MessageSquare, User } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
-import { useUnread } from '@/features/chat'
+import { useUnread } from '@/features/storefront/chat'
 
 const TABS = [
   { href: '/', label: 'Home', icon: Home, match: (p: string) => p === '/' },

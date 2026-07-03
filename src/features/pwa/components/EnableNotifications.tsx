@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { useGuestReady, useGuestSession } from '@/features/chat'
+import { useGuestReady, useGuestSession } from '@/features/storefront/chat'
 import { savePushSubscription } from '@/features/pwa'
 import { Button } from '@/shared/ui'
 

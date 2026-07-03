@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 
-import { getChatMessages, getChatSession } from '@/lib/db/queries'
+import { getChatMessages, getChatSession } from '@/features/admin/chat/services/chat-queries'
 import { Button } from '@/shared/ui'
 import { Avatar, AvatarFallback } from '@/shared/ui'
-import { ChatConversation } from '@/features/chat'
+import { ChatConversation } from '@/features/admin/chat'
 
 export const metadata: Metadata = { title: 'Conversation — Zita Boutique' }
 

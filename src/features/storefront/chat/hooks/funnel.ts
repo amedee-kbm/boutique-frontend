@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client'
 import type { BagItem } from '@/features/bag'
-import { getGuestSession, setGuestSession } from '@/features/chat'
+import { getGuestSession, setGuestSession } from './guest'
 
 const OPENING_MESSAGE = "Hi! I'd love to know more about these pieces."
 

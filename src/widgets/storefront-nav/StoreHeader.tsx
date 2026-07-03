@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { cn } from '@/shared/lib/utils'
-import { useUnread } from '@/features/chat'
+import { useUnread } from '@/features/storefront/chat'
 import { BagButton } from '@/features/bag'
 
 const NAV = [

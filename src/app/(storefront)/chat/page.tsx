@@ -1,4 +1,4 @@
-import { GuestChat } from '@/features/chat'
+import { GuestChat } from '@/features/storefront/chat'
 import { EnableNotifications } from '@/features/pwa'
 
 export const metadata = { title: 'Chat — Zita Boutique' }

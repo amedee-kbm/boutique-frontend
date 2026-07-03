@@ -3,18 +3,7 @@ import { ChevronRight } from 'lucide-react'
 
 import { formatPrice } from '@/shared/lib/format'
 import { ProductThumb } from '@/shared/components/ProductThumb'
-
-export interface InquiryItem {
-  id: string
-  // Null once the product is deleted; slug is null when it's also hidden/gone.
-  productId: string | null
-  slug: string | null
-  name: string
-  colorValue: string | null
-  sizeValue: string | null
-  price: string
-  imageUrl: string | null
-}
+import type { InquiryItem } from '@/shared/types'
 
 function metaLine(item: InquiryItem): string | null {
   const parts = [item.colorValue, item.sizeValue].filter(Boolean)

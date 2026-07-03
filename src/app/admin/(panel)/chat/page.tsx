@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { ChevronRight, MessageCircle } from 'lucide-react'
 
-import { getAllChatSessions } from '@/lib/db/queries'
+import { getAllChatSessions } from '@/features/admin/chat/services/chat-queries'
 import { cn } from '@/shared/lib/utils'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { InboxRealtime } from '@/features/chat'
+import { InboxRealtime } from '@/features/admin/chat'
 import { Avatar, AvatarFallback } from '@/shared/ui'
 import { Badge } from '@/shared/ui'
 

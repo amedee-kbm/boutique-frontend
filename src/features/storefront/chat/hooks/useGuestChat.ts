@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useGuestSession } from './guest'
 import { markChatSeen, markLastMessageAt } from './useUnread'
 import { toast } from 'sonner'
-import type { InquiryItem } from '../components/storefront/ProductInquiryCard'
+import type { InquiryItem } from '@/shared/types'
 
 export interface Message {
   id: string

@@ -3,8 +3,8 @@
 import { useEffect } from 'react'
 
 import { createClient } from '@/lib/supabase/client'
-import { useGuestSession } from '@/features/chat'
-import { markLastMessageAt } from '@/features/chat'
+import { useGuestSession } from '../hooks/guest'
+import { markLastMessageAt } from '../hooks/useUnread'
 
 // Mounted once in the storefront shell so an admin reply lights the Chat tab's
 // unread dot even when the customer is browsing other pages.

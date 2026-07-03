@@ -2,7 +2,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 import { StoreHeader } from '@/widgets/storefront-nav'
 import { StoreTabBar } from '@/widgets/storefront-nav'
-import { ChatPresence } from '@/features/chat'
+import { ChatPresence } from '@/features/storefront/chat'
 import { ServiceWorkerRegistrar } from '@/features/pwa'
 import { FavoritesProvider } from '@/features/favorites'
 
