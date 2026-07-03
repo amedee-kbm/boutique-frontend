@@ -4,7 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { asc, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { productImages, products } from '@/lib/db/schema'
+import {
+  productImages,
+  products,
+  productVariantGroups,
+  productVariantOptions,
+} from '@/lib/db/schema'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { productFormSchema } from './products.schema'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
@@ -54,6 +59,108 @@ export async function createProduct(formData: FormData) {
   } catch {
     return { error: 'A product with that slug already exists.', id: null }
   }
+}
+
+// Create a product together with its images and variant groups in a single DB
+// transaction so a mid-chain failure can't leave an orphaned half-product (the
+// old client-side create → upload → variant chain could). Files are uploaded to
+// storage first (storage isn't transactional); on a DB failure the uploaded
+// objects are best-effort removed. `variantGroups` is a JSON array of
+// { name, options: string[] }.
+export async function createFullProduct(formData: FormData) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error, id: null }
+
+  const raw = {
+    name: formData.get('name'),
+    slug: formData.get('slug') || slugify(String(formData.get('name'))),
+    description: formData.get('description') || undefined,
+    price: formData.get('price'),
+    categoryId: formData.get('categoryId') || null,
+    visible: formData.get('visible') === 'true',
+  }
+
+  const parsed = productFormSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input', id: null }
+  }
+
+  let groups: { name: string; options: string[] }[] = []
+  const groupsRaw = formData.get('variantGroups')
+  if (typeof groupsRaw === 'string' && groupsRaw) {
+    try {
+      groups = JSON.parse(groupsRaw)
+    } catch {
+      return { error: 'Invalid variant data', id: null }
+    }
+  }
+
+  const productId = crypto.randomUUID()
+
+  // Upload images to storage before opening the transaction. Keep the paths so a
+  // DB failure can clean them up.
+  const files = formData.getAll('files').filter((f): f is File => f instanceof File)
+  const supabase = createAdminClient()
+  const uploadedPaths: string[] = []
+  const imageRows: { url: string; position: number }[] = []
+  for (const [index, file] of files.entries()) {
+    const ext = file.name.split('.').pop()
+    const path = `${productId}/${Date.now()}-${index}.${ext}`
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(path, file, { contentType: file.type, upsert: false })
+    if (uploadError) {
+      if (uploadedPaths.length) await supabase.storage.from('product-images').remove(uploadedPaths)
+      return { error: uploadError.message, id: null }
+    }
+    uploadedPaths.push(path)
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('product-images').getPublicUrl(path)
+    imageRows.push({ url: publicUrl, position: index })
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(products).values({
+        id: productId,
+        name: parsed.data.name,
+        slug: parsed.data.slug,
+        description: parsed.data.description,
+        price: parsed.data.price,
+        categoryId: parsed.data.categoryId ?? null,
+        visible: parsed.data.visible,
+      })
+
+      if (imageRows.length) {
+        await tx
+          .insert(productImages)
+          .values(imageRows.map((r) => ({ productId, url: r.url, position: r.position })))
+      }
+
+      for (const [groupIndex, group] of groups.entries()) {
+        const [created] = await tx
+          .insert(productVariantGroups)
+          .values({ productId, name: group.name, position: groupIndex })
+          .returning({ id: productVariantGroups.id })
+        if (created && group.options.length) {
+          await tx.insert(productVariantOptions).values(
+            group.options.map((value, optionIndex) => ({
+              groupId: created.id,
+              value,
+              position: optionIndex,
+            }))
+          )
+        }
+      }
+    })
+  } catch {
+    if (uploadedPaths.length) await supabase.storage.from('product-images').remove(uploadedPaths)
+    return { error: 'A product with that slug already exists.', id: null }
+  }
+
+  revalidatePath('/admin/products')
+  return { error: null, id: productId }
 }
 
 export async function updateProduct(id: string, formData: FormData) {

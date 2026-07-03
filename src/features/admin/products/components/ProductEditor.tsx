@@ -4,11 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-import { createProduct, updateProduct, uploadProductImage } from '@/features/admin/products'
+import { updateProduct, createFullProduct } from '@/features/admin/products'
 import { setProductFilterValue } from '@/features/admin/products'
+import { useProductForm } from '../hooks/useProductForm'
 import { formatPrice } from '@/shared/lib/format'
 import { useMediaQuery } from '@/shared/hooks/use-media-query'
-import { addVariantGroup, addVariantOption } from '@/features/admin/products'
 import type { CategoryFilter } from '@/shared/types'
 import { VariantStager, type StagedVariantGroup } from '@/features/admin/products'
 import { VariantManager } from '@/features/admin/products'
@@ -106,11 +106,20 @@ export function ProductEditor({
   const [isPending, startTransition] = useTransition()
   const isEditing = Boolean(product)
 
-  const [name, setName] = useState(product?.name ?? '')
-  const [price, setPrice] = useState(product?.price ?? '')
-  const [description, setDescription] = useState(product?.description ?? '')
-  const [categoryId, setCategoryId] = useState(product?.categoryId ?? '')
-  const [visible, setVisible] = useState(product?.visible ?? true)
+  const form = useProductForm(product)
+  // Scalar fields live in the RHF form; these aliases keep the JSX and the
+  // sub-screen handlers unchanged while setValue drives the (watched) form state.
+  const name = form.watch('name')
+  const price = form.watch('price')
+  const description = form.watch('description') ?? ''
+  const categoryId = form.watch('categoryId')
+  const visible = form.watch('visible')
+  const setName = (v: string) => form.setValue('name', v)
+  const setPrice = (v: string) => form.setValue('price', v)
+  const setDescription = (v: string) => form.setValue('description', v)
+  const setCategoryId = (v: string) => form.setValue('categoryId', v)
+  const setVisible = (v: boolean) => form.setValue('visible', v)
+
   const [files, setFiles] = useState<File[]>([])
   const [variantGroups, setVariantGroups] = useState<StagedVariantGroup[]>([])
   const [filterOptionIds, setFilterOptionIds] = useState<string[]>(product?.filterOptionIds ?? [])
@@ -149,21 +158,17 @@ export function ProductEditor({
       : undefined
 
   function buildFormData() {
+    const v = form.getValues()
     const formData = new FormData()
-    formData.set('name', name)
-    formData.set('price', price)
-    if (description) formData.set('description', description)
-    formData.set('categoryId', categoryId)
-    formData.set('visible', String(visible))
+    formData.set('name', v.name)
+    formData.set('price', v.price)
+    if (v.description) formData.set('description', v.description)
+    formData.set('categoryId', v.categoryId)
+    formData.set('visible', String(v.visible))
     return formData
   }
 
-  function handleSave() {
-    if (!name.trim()) {
-      toast.error('Add a product title')
-      return
-    }
-
+  function onSubmit() {
     startTransition(async () => {
       const formData = buildFormData()
 
@@ -179,39 +184,30 @@ export function ProductEditor({
         return
       }
 
-      const result = await createProduct(formData)
+      // Create the product, its images, and its variant groups atomically.
+      files.forEach((file) => formData.append('files', file))
+      formData.set(
+        'variantGroups',
+        JSON.stringify(
+          variantGroups.map((g) => ({ name: g.name, options: g.options.map((o) => o.value) }))
+        )
+      )
+
+      const result = await createFullProduct(formData)
       if (result.error || !result.id) {
         toast.error(result.error ?? 'Could not create product')
         return
-      }
-
-      const uploads = await Promise.all(
-        files.map((file, index) => {
-          const imageData = new FormData()
-          imageData.set('file', file)
-          return uploadProductImage(result.id, imageData, index)
-        })
-      )
-      for (const upload of uploads) {
-        if (upload.error) toast.error(upload.error)
-      }
-
-      for (const group of variantGroups) {
-        const created = await addVariantGroup(result.id, group.name)
-        if (created.error || !created.group) {
-          toast.error(created.error ?? 'Could not add variant group')
-          continue
-        }
-        for (const option of group.options) {
-          const added = await addVariantOption(created.group.id, result.id, option.value)
-          if (added.error) toast.error(added.error)
-        }
       }
 
       toast.success('Product created')
       router.push(`/admin/products/${result.id}/edit`)
     })
   }
+
+  const handleSave = form.handleSubmit(onSubmit, (errors) => {
+    const first = Object.values(errors)[0]
+    toast.error((first?.message as string) ?? 'Check the highlighted fields')
+  })
 
   return (
     <div className="mx-auto max-w-screen-xl">
