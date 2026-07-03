@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 
-import { getAllOrders } from '@/lib/db/queries'
+import { getAllOrders } from '@/features/admin/orders/services/order-queries'
 import { PageHeader } from '@/shared/components/PageHeader'
-import { OrdersList } from '@/features/orders'
-import { OrdersRealtime } from '@/features/orders'
+import { OrdersList } from '@/features/admin/orders'
+import { OrdersRealtime } from '@/features/admin/orders'
 
 export const metadata: Metadata = { title: 'Orders — Zita Boutique' }
 
