@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-import { Monogram } from '@/features/pwa'
+import { Monogram } from '@/features/pwa/lib/monogram'
 
 const VARIANTS = {
   '192': { size: 192, maskable: false },

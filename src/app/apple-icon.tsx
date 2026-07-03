@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-import { Monogram } from '@/features/pwa'
+import { Monogram } from '@/features/pwa/lib/monogram'
 
 // iOS masks the apple touch icon itself and renders transparency as black, so
 // this stays a full-bleed opaque square.

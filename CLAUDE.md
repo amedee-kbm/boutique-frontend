@@ -70,6 +70,30 @@ Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells af
 
 ---
 
+## Feature-Sliced Design (`src/`)
+
+The code is organized as Feature-Sliced Design under `src/`, with `@/*` → `./src/*`:
+
+- `src/app/` — Next routes (thin; render features/widgets).
+- `src/features/<group>/<slice>/` — domain slices, each with `components/ hooks/ services/ lib/ consts/ types/` and a public `index.ts` barrel. The two top-level groups are **`features/storefront/*`** (customer app) and **`features/admin/*`** (seller app); **`features/auth`** and **`features/pwa`** stay **flat** (both apps use them).
+- `src/widgets/` — multi-feature UI blocks (admin-nav, storefront-nav).
+- `src/shared/` — `ui/` (shadcn/Base UI atoms), `components/` (cross-feature UI, e.g. `ProductThumb`, `ProductInquiryCard`), `lib/` (`utils`, `format`, `error`), `types/` (cross-group types, e.g. `CategoryFilter`, `InquiryItem`).
+- `src/lib/` — stateful backend infra: `db/` (Drizzle, direct Postgres, **bypasses RLS**, server-only) and `supabase/` (SDK: auth/realtime/storage, the RLS path). Keep these separate — the split is the security boundary.
+
+**Group isolation (enforced):** `features/storefront/*` and `features/admin/*` may depend on `features/auth`, `features/pwa`, `src/shared`, and `src/lib` — but **never on each other**. If a symbol is genuinely needed by both apps, it goes to `src/shared` (UI/types) or is duplicated per group (scope-split reads, e.g. `getCategoryFilters`). Cross-slice imports **within** a group are fine.
+
+- Check: `grep -rn "@/features/admin" src/features/storefront` and `grep -rn "@/features/storefront" src/features/admin` must both be empty.
+
+**Services split by authorization scope, not shared.** Reads live in a feature `services/*-queries.ts`; storefront reads filter `visible = true`, admin reads don't. Writes are `'use server'` action files. There is no `lib/db/queries.ts` god-module — each read lands in exactly one feature.
+
+**Supabase in the UI:** no `@/lib/supabase/client` import outside `hooks/` and `services/`. Components render hook state; hooks own subscriptions/state and call services; services own Supabase IO and return `{ data, error }`.
+
+- Check: `grep -rln "from '@/lib/supabase/client'" $(find src/features -type d -name components)` must be empty.
+
+**Barrel convention (prevents server/client leaks):** a feature's top `index.ts` must **not** re-export **server-only** modules (`import 'server-only'`, anything importing `@/lib/db` — i.e. the `*-queries` read services) **nor** client-only value modules (nuqs parser objects, context singletons). Export **components** and **`'use server'` action files** via the barrel (both are safe — actions are RPC-stubbed on the client). Import server-only read services and client-only parsers **by path**. Type-only re-exports (`export type { … } from './services/…-queries'`) are fine — they're erased at runtime. `npm run build` is the real check: it collects page data and fails on a boundary violation.
+
+---
+
 ## Feature Scope
 
 ### Storefront (customer-facing)

@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-import { Monogram } from '@/features/pwa'
+import { Monogram } from '@/features/pwa/lib/monogram'
 
 export const size = { width: 64, height: 64 }
 export const contentType = 'image/png'
