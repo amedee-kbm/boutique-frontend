@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-import { createClient } from '@/lib/supabase/client'
+import { AuthService } from '../services/auth.service'
 import { useCustomer } from '../hooks/useCustomer'
 import { Button } from '@/shared/ui'
 
@@ -15,7 +15,7 @@ export function AccountView() {
 
   async function handleSignOut() {
     setSigningOut(true)
-    await createClient().auth.signOut()
+    await AuthService.signOut()
     router.refresh()
     setSigningOut(false)
   }

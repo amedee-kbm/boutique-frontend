@@ -1,28 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useOrdersRealtime } from '../hooks/useOrdersRealtime'
 
-import { createClient } from '@/lib/supabase/client'
-
-// Keeps the seller's Orders inbox live: any orders insert refreshes the
-// server-rendered list so a new order surfaces without a manual reload.
 export function OrdersRealtime() {
-  const router = useRouter()
-
-  useEffect(() => {
-    const supabase = createClient()
-    const channel = supabase
-      .channel('admin-orders')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () =>
-        router.refresh()
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [router])
-
+  useOrdersRealtime()
   return null
 }

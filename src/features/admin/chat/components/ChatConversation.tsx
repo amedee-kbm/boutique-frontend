@@ -6,44 +6,14 @@ import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { sendAdminMessage } from '@/features/admin/chat'
-import { createClient } from '@/lib/supabase/client'
+import { useAdminChat, type ChatMessage } from '../hooks/useAdminChat'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
 import { ProductInquiryCard } from '@/shared/components/ProductInquiryCard'
 import type { InquiryItem } from '@/shared/types'
 
-export interface ChatMessage {
-  id: string
-  content: string
-  fromAdmin: boolean
-  createdAt: string | Date
-  items: InquiryItem[]
-}
-
-interface RawItemRow {
-  id: string
-  product_id: string | null
-  name_snapshot: string
-  color_value: string | null
-  size_value: string | null
-  price_snapshot: string
-  image_url_snapshot: string | null
-  products: { slug: string; visible: boolean } | null
-}
-
-function mapItemRow(row: RawItemRow): InquiryItem {
-  return {
-    id: row.id,
-    productId: row.product_id,
-    slug: row.product_id && row.products?.visible ? row.products.slug : null,
-    name: row.name_snapshot,
-    colorValue: row.color_value,
-    sizeValue: row.size_value,
-    price: row.price_snapshot,
-    imageUrl: row.image_url_snapshot,
-  }
-}
+export type { ChatMessage }
 
 export function ChatConversation({
   sessionId,
@@ -52,7 +22,7 @@ export function ChatConversation({
   sessionId: string
   initialMessages: ChatMessage[]
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
+  const { messages, addMessage } = useAdminChat(sessionId, initialMessages)
   const [draft, setDraft] = useState('')
   const [isPending, startTransition] = useTransition()
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -60,63 +30,6 @@ export function ChatConversation({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  useEffect(() => {
-    const supabase = createClient()
-    const channel = supabase
-      .channel(`chat:${sessionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `session_id=eq.${sessionId}`,
-        },
-        async (payload) => {
-          const row = payload.new as {
-            id: string
-            content: string
-            from_admin: boolean
-            created_at: string
-          }
-
-          // A customer inquiry carries product cards in chat_message_items; fetch
-          // them before rendering so the message lands complete.
-          let items: InquiryItem[] = []
-          if (!row.from_admin) {
-            const { data } = await supabase
-              .from('chat_message_items')
-              .select(
-                'id, product_id, name_snapshot, color_value, size_value, price_snapshot, image_url_snapshot, products(slug, visible)'
-              )
-              .eq('message_id', row.id)
-              .order('position')
-            items = ((data as RawItemRow[] | null) ?? []).map(mapItemRow)
-          }
-
-          setMessages((prev) =>
-            prev.some((m) => m.id === row.id)
-              ? prev
-              : [
-                  ...prev,
-                  {
-                    id: row.id,
-                    content: row.content,
-                    fromAdmin: row.from_admin,
-                    createdAt: row.created_at,
-                    items,
-                  },
-                ]
-          )
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [sessionId])
 
   function handleSend() {
     const content = draft.trim()
@@ -130,8 +43,7 @@ export function ChatConversation({
         setDraft(content)
         return
       }
-      const sent = { ...result.message, items: [] as InquiryItem[] }
-      setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]))
+      addMessage({ ...result.message, items: [] as InquiryItem[] })
     })
   }
 
