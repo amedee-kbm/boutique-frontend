@@ -1,6 +1,7 @@
 export { BagButton } from './components/BagButton'
 export { BagHeader } from './components/BagHeader'
 export { BagList } from './components/BagList'
+export { CartTabs } from './components/CartTabs'
 export { useBag, bagKey, addToBag } from './hooks/useBag'
 export type { BagItem } from './hooks/useBag'
 export * from './services/bag.actions'
