@@ -211,6 +211,16 @@ export async function toggleProductVisibility(id: string, visible: boolean) {
   return { error: null }
 }
 
+// Pin/unpin a product so it sorts ahead of the rest in the storefront home feed.
+export async function toggleProductFeatured(id: string, featured: boolean) {
+  const gate = await requireAdmin()
+  if (gate.error) return { error: gate.error }
+  await db.update(products).set({ featured, updatedAt: new Date() }).where(eq(products.id, id))
+  revalidatePath('/admin/products')
+  revalidatePath('/')
+  return { error: null }
+}
+
 export async function deleteProduct(id: string) {
   const gate = await requireAdmin()
   if (gate.error) return { error: gate.error }

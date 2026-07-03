@@ -21,6 +21,7 @@ export async function getAllProducts() {
       slug: products.slug,
       price: products.price,
       visible: products.visible,
+      featured: products.featured,
       createdAt: products.createdAt,
       categoryId: products.categoryId,
       categoryName: categories.name,

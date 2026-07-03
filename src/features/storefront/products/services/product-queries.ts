@@ -3,6 +3,7 @@ import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   categories,
+  homeFilters,
   productImages,
   products,
   productVariantGroups,
@@ -69,7 +70,7 @@ export async function getHomeFeed(limit = 20): Promise<HomeCard[]> {
     })
     .from(products)
     .where(eq(products.visible, true))
-    .orderBy(desc(products.createdAt))
+    .orderBy(desc(products.featured), desc(products.createdAt))
     .limit(limit)
 }
 
@@ -78,10 +79,18 @@ export interface HomeFilter {
   href: string
 }
 
-// The home top filter strip. P7 (admin merchandising) will make these entries
-// admin-editable via a home_filters table; until then this is the seam — it
-// falls back to the visible category index so the strip is never empty.
+// The home top filter strip. The seller edits it in the admin merchandising
+// screen (home_filters table). When that table is empty the strip falls back to
+// the visible category index so it is never blank.
 export async function getHomeFilters(): Promise<HomeFilter[]> {
+  const configured = await db
+    .select({ label: homeFilters.label, href: homeFilters.href })
+    .from(homeFilters)
+    .where(eq(homeFilters.visible, true))
+    .orderBy(asc(homeFilters.position))
+
+  if (configured.length > 0) return configured
+
   const rows = await db
     .select({
       name: categories.name,

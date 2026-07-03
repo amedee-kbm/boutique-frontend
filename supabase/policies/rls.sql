@@ -349,6 +349,30 @@ create policy "category_filter_options: admin write"
   with check ((select public.is_admin()));
 
 -- ============================================================
+-- home_filters
+-- Read: everyone | Write: admin only (mirror categories)
+-- App reads go through Drizzle (bypasses RLS); this is the belt for any
+-- direct-SDK access.
+-- ============================================================
+alter table public.home_filters enable row level security;
+
+drop policy if exists "home_filters: read all"    on public.home_filters;
+drop policy if exists "home_filters: admin write" on public.home_filters;
+
+create policy "home_filters: read all"
+  on public.home_filters
+  for select
+  to anon, authenticated
+  using (true);
+
+create policy "home_filters: admin write"
+  on public.home_filters
+  for all
+  to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+-- ============================================================
 -- product_filter_values
 -- Read: anon sees values for visible products only | admin sees all
 -- Write: admin only (mirror product_images)

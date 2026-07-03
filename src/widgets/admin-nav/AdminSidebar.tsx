@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, MessageSquare, Package, ShoppingBag, Tag } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, Package, ShoppingBag, Store, Tag } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
 import { LogoutButton } from '@/features/auth'
@@ -14,6 +14,7 @@ const navItems = [
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
+  { href: '/admin/merchandising', label: 'Storefront', icon: Store },
   { href: '/admin/chat', label: 'Chat', icon: MessageSquare },
 ]
 

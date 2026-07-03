@@ -1,10 +1,15 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { Search, Trash2 } from 'lucide-react'
+import { Search, Star, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { deleteProduct, toggleProductVisibility } from '@/features/admin/products'
+import {
+  deleteProduct,
+  toggleProductFeatured,
+  toggleProductVisibility,
+} from '@/features/admin/products'
+import { cn } from '@/shared/lib/utils'
 import { formatPrice } from '@/shared/lib/format'
 import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
@@ -18,6 +23,7 @@ interface Product {
   name: string
   price: string
   visible: boolean
+  featured: boolean
   categoryName: string | null
   thumbnail: string | null
   variantCount: number
@@ -30,6 +36,29 @@ const filterOptions: { value: Filter; label: string }[] = [
   { value: 'visible', label: 'Visible' },
   { value: 'hidden', label: 'Hidden' },
 ]
+
+function FeaturedToggle({ id, featured }: { id: string; featured: boolean }) {
+  const [isPending, startTransition] = useTransition()
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      className="size-11 md:size-7"
+      disabled={isPending}
+      aria-label={featured ? 'Unpin from home feed' : 'Pin to home feed'}
+      aria-pressed={featured}
+      onClick={() => {
+        startTransition(async () => {
+          await toggleProductFeatured(id, !featured)
+          toast.success(featured ? 'Unpinned from home' : 'Pinned to home')
+        })
+      }}
+    >
+      <Star className={cn('size-4', featured && 'fill-amber-400 text-amber-500')} />
+    </Button>
+  )
+}
 
 function VisibilityToggle({ id, visible }: { id: string; visible: boolean }) {
   const [isPending, startTransition] = useTransition()
@@ -108,6 +137,7 @@ export function ProductsList({ products }: { products: Product[] }) {
               accent={product.visible ? undefined : 'Hidden'}
               actions={
                 <>
+                  <FeaturedToggle id={product.id} featured={product.featured} />
                   <VisibilityToggle id={product.id} visible={product.visible} />
                   <ConfirmDialog
                     title="Delete product?"

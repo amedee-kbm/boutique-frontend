@@ -34,6 +34,8 @@ export const products = pgTable('products', {
   price: numeric('price', { precision: 10, scale: 2 }).notNull(),
   categoryId: uuid('category_id').references(() => categories.id),
   visible: boolean('visible').notNull().default(true),
+  // Seller-pinned: featured products sort ahead of the rest in the home feed.
+  featured: boolean('featured').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -92,6 +94,20 @@ export const categoryFilterOptions = pgTable('category_filter_options', {
     .notNull(),
   value: text('value').notNull(),
   position: integer('position').notNull().default(0),
+})
+
+// The seller-editable home top filter strip: each row is one chip on the
+// storefront homepage. Read publicly (visible rows, by position); written only
+// by the admin merchandising editor. When empty, the storefront falls back to
+// the visible category index so the strip is never blank.
+export const homeFilters = pgTable('home_filters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  label: text('label').notNull(),
+  href: text('href').notNull(),
+  position: integer('position').notNull().default(0),
+  visible: boolean('visible').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
 export const productFilterValues = pgTable(
