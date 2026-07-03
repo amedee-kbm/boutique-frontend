@@ -1,15 +1,20 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
-import { Send } from 'lucide-react'
+import { Send, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useGuestName, useGuestReady } from '../hooks/guest'
 import { startGuestChat } from '../hooks/funnel'
-import { useGuestChat } from '../hooks/useGuestChat'
+import { useGuestChat, type ContextItem } from '../hooks/useGuestChat'
+import type { StoreCard } from '@/features/storefront/products'
+import { useBag } from '@/features/storefront/bag'
+import { useFavorites } from '@/features/storefront/favorites'
 import { cn } from '@/shared/lib/utils'
+import { formatPrice } from '@/shared/lib/format'
 import { Button, Input } from '@/shared/ui'
+import { ProductThumb } from '@/shared/components/ProductThumb'
 import { ProductInquiryCard } from '@/shared/components/ProductInquiryCard'
 
 function StartChat() {
@@ -59,9 +64,100 @@ function StartChat() {
   )
 }
 
-export function GuestChat() {
+interface ContextChip extends ContextItem {
+  // Stable key so a dismiss is local to this row, never a Bag/Favorites write.
+  chipKey: string
+}
+
+// The Bag + Favorites strip above the composer. ✕ is CHAT-LOCAL ONLY: it drops
+// the piece from the context THIS question is about — it does NOT remove it from
+// the Bag or Favorites. The remaining chips are attached to the first message.
+function ContextStrip({
+  chips,
+  onDismiss,
+}: {
+  chips: ContextChip[]
+  onDismiss: (chipKey: string) => void
+}) {
+  if (chips.length === 0) return null
+  return (
+    <div className="flex gap-2 overflow-x-auto border-t px-3 py-2">
+      {chips.map((chip) => (
+        <div
+          key={chip.chipKey}
+          className="bg-muted/40 flex shrink-0 items-center gap-2 border px-2 py-1"
+        >
+          <ProductThumb src={chip.imageUrl} alt={chip.name} className="size-8 object-cover" />
+          <div className="max-w-32 min-w-0">
+            <p className="truncate text-xs font-medium">{chip.name}</p>
+            <p className="text-muted-foreground text-[10px]">{formatPrice(chip.price)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onDismiss(chip.chipKey)}
+            aria-label={`Remove ${chip.name} from this question`}
+            className="text-muted-foreground hover:text-foreground p-0.5"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function GuestChat({ favoriteProducts = [] }: { favoriteProducts?: StoreCard[] }) {
   const ready = useGuestReady()
   const { messages, draft, setDraft, sending, handleSend, bottomRef, sessionId } = useGuestChat()
+  const { items: bagItems } = useBag()
+  const { isFavorite } = useFavorites()
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+
+  // Context only rides the opening question, so once anything has been said the
+  // strip disappears.
+  const showContext = messages.length === 0
+
+  const chips = useMemo<ContextChip[]>(() => {
+    const fromBag = bagItems.map((item) => ({
+      chipKey: `bag:${item.key}`,
+      productId: item.productId,
+      name: item.name,
+      colorValue: item.colorValue,
+      size: item.size,
+      price: item.price,
+      imageUrl: item.imageUrl,
+    }))
+    const fromFavorites = favoriteProducts
+      .filter((product) => isFavorite(product.id))
+      .map((product) => ({
+        chipKey: `fav:${product.id}`,
+        productId: product.id,
+        name: product.name,
+        colorValue: null,
+        size: null,
+        price: product.price,
+        imageUrl: product.thumbnail,
+      }))
+    return [...fromBag, ...fromFavorites].filter((chip) => !dismissed.has(chip.chipKey))
+  }, [bagItems, favoriteProducts, isFavorite, dismissed])
+
+  function dismissChip(chipKey: string) {
+    setDismissed((prev) => new Set(prev).add(chipKey))
+  }
+
+  function submit() {
+    const context: ContextItem[] = showContext
+      ? chips.map((chip) => ({
+          productId: chip.productId,
+          name: chip.name,
+          colorValue: chip.colorValue,
+          size: chip.size,
+          price: chip.price,
+          imageUrl: chip.imageUrl,
+        }))
+      : []
+    handleSend(context)
+  }
 
   if (!ready) return null
 
@@ -111,10 +207,12 @@ export function GuestChat() {
         <div ref={bottomRef} />
       </div>
 
+      {showContext && <ContextStrip chips={chips} onDismiss={dismissChip} />}
+
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          handleSend()
+          submit()
         }}
         className="flex items-center gap-2 border-t p-3"
       >

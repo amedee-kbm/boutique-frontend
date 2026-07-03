@@ -15,6 +15,18 @@ export interface Message {
   items: InquiryItem[]
 }
 
+// A Bag or Favorites piece the guest keeps attached to their opening question.
+// Mirrors the snapshot columns on chat_message_items so a card still renders
+// after the product changes or hides.
+export interface ContextItem {
+  productId: string
+  name: string
+  colorValue: string | null
+  size: string | null
+  price: string
+  imageUrl: string | null
+}
+
 interface RawItemRow {
   id: string
   product_id: string | null
@@ -148,9 +160,12 @@ export function useGuestChat() {
     }
   }, [sessionId])
 
-  async function handleSend() {
+  // `context` is attached only to the guest's FIRST message — their opening
+  // question about the pieces they've selected. Later messages carry no items.
+  async function handleSend(context: ContextItem[] = []) {
     const content = draft.trim()
     if (!content || !sessionId) return
+    const isFirst = messages.length === 0
     setDraft('')
     setSending(true)
     const supabase = createClient()
@@ -159,12 +174,36 @@ export function useGuestChat() {
       .insert({ session_id: sessionId, content, from_admin: false })
       .select('id, content, from_admin, created_at')
       .single()
-    setSending(false)
     if (error || !data) {
+      setSending(false)
       toast.error('Could not send. Please try again.')
       setDraft(content)
       return
     }
+
+    let items: InquiryItem[] = []
+    if (isFirst && context.length > 0) {
+      await supabase.from('chat_message_items').insert(
+        context.map((item, position) => ({
+          message_id: data.id,
+          product_id: item.productId,
+          position,
+          name_snapshot: item.name,
+          color_value: item.colorValue,
+          size_value: item.size,
+          price_snapshot: item.price,
+          image_url_snapshot: item.imageUrl,
+        }))
+      )
+      const { data: itemRows } = await supabase
+        .from('chat_message_items')
+        .select(ITEM_SELECT)
+        .eq('message_id', data.id)
+        .order('position')
+      items = ((itemRows as RawItemRow[] | null) ?? []).map(mapItemRow)
+    }
+
+    setSending(false)
     await supabase
       .from('chat_sessions')
       .update({ last_message_at: new Date().toISOString() })
@@ -179,7 +218,7 @@ export function useGuestChat() {
               content: data.content as string,
               fromAdmin: data.from_admin as boolean,
               createdAt: data.created_at as string,
-              items: [],
+              items,
             },
           ]
     )
