@@ -4,6 +4,12 @@ import { getAdminUser } from '@/features/auth/services/admin-guard'
 import { AdminSidebar } from '@/widgets/admin-nav'
 import { AdminMobileNav } from '@/widgets/admin-nav'
 
+// The admin panel is auth-gated and per-seller — it is never static. Forcing the
+// whole segment dynamic keeps `next build` from trial-rendering these pages (and
+// running their DB reads) at build time, which otherwise hangs when the DB pooler
+// is under load.
+export const dynamic = 'force-dynamic'
+
 export default async function AdminPanelLayout({ children }: { children: React.ReactNode }) {
   const { user, isAdmin } = await getAdminUser()
 
