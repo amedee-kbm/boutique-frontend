@@ -4,9 +4,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 const MAINTENANCE_PATH = '/maintenance'
 const KEEP_ALIVE_TTL = 30_000
 
-// Auto-maintenance decision is cached so we ping at most once per TTL, not on
-// every matched request.
-let autoCache = { active: false, checkedAt: 0 }
+// The keep-alive result is cached so we ping at most once per TTL, not on every
+// matched request.
+let cache = { unreachable: false, checkedAt: 0 }
 
 // Pings a dedicated `keep-alive` table via PostgREST. Returns true only when the
 // database is genuinely unreachable. An RLS denial (42501 / "permission denied")
@@ -44,26 +44,20 @@ async function databaseUnreachable(): Promise<boolean> {
   }
 }
 
-async function autoMaintenanceActive(): Promise<boolean> {
+async function maintenanceActive(): Promise<boolean> {
   const now = Date.now()
-  if (now - autoCache.checkedAt < KEEP_ALIVE_TTL) return autoCache.active
-  const active = await databaseUnreachable()
-  autoCache = { active, checkedAt: now }
-  return active
+  if (now - cache.checkedAt < KEEP_ALIVE_TTL) return cache.unreachable
+  const unreachable = await databaseUnreachable()
+  cache = { unreachable, checkedAt: now }
+  return unreachable
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Maintenance is opt-in. NEXT_PUBLIC_MAINTENANCE_MODE=yes forces it; the
-  // separate NEXT_PUBLIC_MAINTENANCE_AUTO=yes enables the keep-alive auto-trip,
-  // which fires only on a real DB outage (an RLS denial never trips it). Both
-  // unset (the default) means no ping and no maintenance.
-  const forceMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'yes'
-  const autoMaintenance = process.env.NEXT_PUBLIC_MAINTENANCE_AUTO === 'yes'
-  const maintenanceOn = forceMaintenance || (autoMaintenance && (await autoMaintenanceActive()))
-
-  if (maintenanceOn) {
+  // Maintenance is driven solely by database reachability: the keep-alive ping
+  // trips it only on a genuine outage (an RLS denial never does).
+  if (await maintenanceActive()) {
     if (pathname === MAINTENANCE_PATH) return NextResponse.next()
     const url = request.nextUrl.clone()
     url.pathname = MAINTENANCE_PATH
