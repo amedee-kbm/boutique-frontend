@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import type { BagItem } from '@/features/bag'
+import type { BagItem } from '@/features/storefront/bag'
 import { ensureAnonUser } from '@/features/storefront/chat/hooks/funnel'
 import type { OrderDetails } from './order.schema'
 

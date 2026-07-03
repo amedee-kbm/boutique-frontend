@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { formatPrice } from '@/shared/lib/format'
 import type { StoreCard } from '@/features/storefront/products'
 import { ColorSquares } from './ColorSquares'
-import { FavoriteButton } from '@/features/favorites'
+import { FavoriteButton } from '@/features/storefront/favorites'
 
 export function GridCard({ product }: { product: StoreCard }) {
   return (

@@ -2,7 +2,10 @@ import Link from 'next/link'
 import { MessageCircle, Package, Plus, ShoppingBag, Tag } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
-import { getDashboardStats, getRecentProducts } from '@/lib/db/queries'
+import {
+  getDashboardStats,
+  getRecentProducts,
+} from '@/features/admin/overview/services/overview-queries'
 import { formatPrice } from '@/shared/lib/format'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { ProductThumb } from '@/shared/components/ProductThumb'

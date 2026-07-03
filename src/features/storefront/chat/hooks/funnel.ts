@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import type { BagItem } from '@/features/bag'
+import type { BagItem } from '@/features/storefront/bag'
 import { getGuestSession, setGuestSession } from './guest'
 
 const OPENING_MESSAGE = "Hi! I'd love to know more about these pieces."

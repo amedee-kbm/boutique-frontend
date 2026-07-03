@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { addToBag, bagKey } from '@/features/bag'
+import { addToBag, bagKey } from '@/features/storefront/bag'
 import type { HomeCard } from '@/features/storefront/products'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui'
 

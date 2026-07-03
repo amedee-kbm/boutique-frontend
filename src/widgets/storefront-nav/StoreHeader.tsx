@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 
 import { cn } from '@/shared/lib/utils'
 import { useUnread } from '@/features/storefront/chat'
-import { BagButton } from '@/features/bag'
+import { BagButton } from '@/features/storefront/bag'
 
 const NAV = [
   { href: '/', label: 'Home', match: (p: string) => p === '/' },

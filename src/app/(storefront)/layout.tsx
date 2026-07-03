@@ -4,7 +4,7 @@ import { StoreHeader } from '@/widgets/storefront-nav'
 import { StoreTabBar } from '@/widgets/storefront-nav'
 import { ChatPresence } from '@/features/storefront/chat'
 import { ServiceWorkerRegistrar } from '@/features/pwa'
-import { FavoritesProvider } from '@/features/favorites'
+import { FavoritesProvider } from '@/features/storefront/favorites'
 
 export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
   return (

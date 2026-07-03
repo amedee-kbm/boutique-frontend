@@ -1,5 +1,5 @@
-import { BagList } from '@/features/bag'
-import { BagHeader } from '@/features/bag'
+import { BagList } from '@/features/storefront/bag'
+import { BagHeader } from '@/features/storefront/bag'
 
 export const metadata = { title: 'Your bag — Zita Boutique' }
 

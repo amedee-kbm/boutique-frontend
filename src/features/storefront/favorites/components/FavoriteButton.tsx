@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 
 import { cn } from '@/shared/lib/utils'
 import type { StoreCard } from '@/features/storefront/products'
-import { useFavorites } from '@/features/favorites'
+import { useFavorites } from '@/features/storefront/favorites'
 
 // The save/favorite heart. Favoriting is account-gated (Zara-style): a guest tap
 // opens a log in / register prompt instead of saving. Lives as an overlay
