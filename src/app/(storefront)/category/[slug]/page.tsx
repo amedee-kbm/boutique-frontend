@@ -12,6 +12,7 @@ import { GridCard } from '@/features/storefront/products'
 import { FilterSheet } from '@/features/storefront/categories'
 import { SortControl } from '@/features/storefront/categories'
 import { AppliedChips } from '@/features/storefront/categories'
+import { BrowseShell } from '@/widgets/storefront-nav'
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -47,40 +48,42 @@ export default async function CategoryPage({
   ])
 
   return (
-    <div className="pb-6">
-      <div className="border-b px-4 py-3">
-        <h1 className="font-heading text-base font-semibold tracking-[0.2em] uppercase">
-          {category.name}
-        </h1>
-      </div>
-
-      <div className="flex items-center justify-between border-b px-2 py-1.5">
-        <FilterSheet categoryFilters={categoryFilters} meta={meta} />
-        <SortControl />
-      </div>
-
-      <AppliedChips categoryFilters={categoryFilters} />
-
-      {products.length === 0 ? (
-        <div className="px-4 py-16 text-center">
-          {hasActiveFilters ? (
-            <>
-              <p className="text-sm">No pieces match.</p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                Clear a filter above to see more.
-              </p>
-            </>
-          ) : (
-            <p className="text-sm">No pieces here yet.</p>
-          )}
+    <BrowseShell>
+      <div className="pb-6">
+        <div className="border-b px-4 py-3">
+          <h1 className="font-heading text-base font-semibold tracking-[0.2em] uppercase">
+            {category.name}
+          </h1>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-x-px gap-y-4 md:grid-cols-3 md:gap-y-6 xl:grid-cols-4">
-          {products.map((product) => (
-            <GridCard key={product.id} product={product} />
-          ))}
+
+        <div className="flex items-center justify-between border-b px-2 py-1.5">
+          <FilterSheet categoryFilters={categoryFilters} meta={meta} />
+          <SortControl />
         </div>
-      )}
-    </div>
+
+        <AppliedChips categoryFilters={categoryFilters} />
+
+        {products.length === 0 ? (
+          <div className="px-4 py-16 text-center">
+            {hasActiveFilters ? (
+              <>
+                <p className="text-sm">No pieces match.</p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Clear a filter above to see more.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm">No pieces here yet.</p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-3 gap-y-7 px-3 pt-3 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((product) => (
+              <GridCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
+    </BrowseShell>
   )
 }

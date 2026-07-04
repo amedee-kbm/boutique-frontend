@@ -1,54 +1,29 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
-import { cn } from '@/shared/lib/utils'
 import { formatPrice } from '@/shared/lib/format'
 import type { HomeCard } from '@/features/storefront/products'
-import { ColorSquares } from './ColorSquares'
-import { QuickAddButton } from './QuickAddButton'
 
-export function FeedCard({
-  product,
-  priority = false,
-  fullBleed = false,
-}: {
-  product: HomeCard
-  priority?: boolean
-  fullBleed?: boolean
-}) {
+// Home feed tile: a uniform 3:4 photo that fills edge-to-edge (the image is the
+// card — no surrounding box), with the price set as a confident caption below.
+export function FeedCard({ product, priority = false }: { product: HomeCard; priority?: boolean }) {
   return (
-    <div className={cn('relative', fullBleed && 'col-span-2 md:col-span-1')}>
-      <Link href={`/product/${product.slug}`} className="block">
-        <div
-          className={cn(
-            'bg-muted relative w-full overflow-hidden',
-            fullBleed ? 'aspect-[4/5] md:aspect-[3/4]' : 'aspect-[3/4]'
-          )}
-        >
-          {product.thumbnail ? (
-            <Image
-              src={product.thumbnail}
-              alt={product.name}
-              fill
-              sizes={
-                fullBleed
-                  ? '(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 25vw'
-                  : '(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw'
-              }
-              className="object-cover"
-              priority={priority}
-            />
-          ) : null}
-        </div>
-        <div className="px-2 py-2 pr-12">
-          <h2 className="font-heading truncate text-[11px] font-medium tracking-[0.1em] uppercase">
-            {product.name}
-          </h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">{formatPrice(product.price)}</p>
-          <ColorSquares hexes={product.hexes} className="mt-1.5" />
-        </div>
-      </Link>
-      <QuickAddButton product={product} />
-    </div>
+    <Link href={`/product/${product.slug}`} className="group block">
+      <div className="bg-muted relative aspect-[3/4] w-full overflow-hidden">
+        {product.thumbnail ? (
+          <Image
+            src={product.thumbnail}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 20vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            priority={priority}
+          />
+        ) : null}
+      </div>
+      <p className="text-foreground pt-2 text-[15px] font-medium tracking-wide tabular-nums">
+        {formatPrice(product.price)}
+      </p>
+    </Link>
   )
 }
