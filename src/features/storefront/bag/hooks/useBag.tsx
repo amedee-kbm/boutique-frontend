@@ -16,6 +16,7 @@ export interface BagItem {
   colorValue: string | null
   colorHex: string | null
   size: string | null
+  quantity: number
   imageUrl: string | null
 }
 
@@ -81,8 +82,24 @@ function getServerSnapshot(): BagItem[] {
 
 export function addToBag(item: BagItem) {
   ensureInitialized()
-  if (cache.some((i) => i.key === item.key)) return
-  commit([...cache, item])
+  const existing = cache.find((i) => i.key === item.key)
+  if (existing) {
+    // Same product + colour + size is one line; a repeat add bumps its count.
+    commit(
+      cache.map((i) => (i.key === item.key ? { ...i, quantity: i.quantity + item.quantity } : i))
+    )
+    return
+  }
+  commit([...cache, { ...item, quantity: Math.max(1, item.quantity) }])
+}
+
+export function setBagQuantity(key: string, quantity: number) {
+  ensureInitialized()
+  if (quantity < 1) {
+    commit(cache.filter((i) => i.key !== key))
+    return
+  }
+  commit(cache.map((i) => (i.key === key ? { ...i, quantity } : i)))
 }
 
 export function removeFromBag(key: string) {
@@ -101,6 +118,7 @@ export function useBag() {
     items,
     count: items.length,
     add: addToBag,
+    setQuantity: setBagQuantity,
     remove: removeFromBag,
     clear: clearBag,
     hydrated,

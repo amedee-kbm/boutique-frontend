@@ -37,7 +37,11 @@ const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
 ]
 
 function orderTotal(order: AdminOrder) {
-  return order.items.reduce((sum, i) => sum + Number(i.price), 0)
+  return order.items.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0)
+}
+
+function orderPieces(order: AdminOrder) {
+  return order.items.reduce((sum, i) => sum + i.quantity, 0)
 }
 
 export function OrdersList({ orders }: { orders: AdminOrder[] }) {
@@ -85,8 +89,8 @@ export function OrdersList({ orders }: { orders: AdminOrder[] }) {
                 <div className="min-w-0 flex-1">
                   <p className="trunc ate text-sm font-medium">{order.guestName}</p>
                   <p className="text-muted-foreground truncate text-xs">
-                    {order.phone} · {order.items.length}{' '}
-                    {order.items.length === 1 ? 'piece' : 'pieces'} ·{' '}
+                    {order.phone} · {orderPieces(order)}{' '}
+                    {orderPieces(order) === 1 ? 'piece' : 'pieces'} ·{' '}
                     {formatDistanceToNow(order.createdAt, { addSuffix: true })}
                   </p>
                 </div>
@@ -149,7 +153,7 @@ export function OrdersList({ orders }: { orders: AdminOrder[] }) {
 
             <div className="space-y-2">
               <p className="text-muted-foreground text-xs tracking-wide uppercase">
-                {selected.items.length} {selected.items.length === 1 ? 'piece' : 'pieces'}
+                {orderPieces(selected)} {orderPieces(selected) === 1 ? 'piece' : 'pieces'}
               </p>
               <ul className="divide-y">
                 {selected.items.map((item) => (
@@ -166,8 +170,13 @@ export function OrdersList({ orders }: { orders: AdminOrder[] }) {
                           {[item.colorValue, item.sizeValue].filter(Boolean).join(' · ')}
                         </p>
                       )}
+                      <p className="text-muted-foreground text-xs">
+                        {formatPrice(item.price)} × {item.quantity}
+                      </p>
                     </div>
-                    <span className="text-sm">{formatPrice(item.price)}</span>
+                    <span className="text-sm">
+                      {formatPrice(String(Number(item.price) * item.quantity))}
+                    </span>
                   </li>
                 ))}
               </ul>

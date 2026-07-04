@@ -10,6 +10,7 @@ export interface AdminOrderItem {
   name: string
   colorValue: string | null
   sizeValue: string | null
+  quantity: number
   price: string
   imageUrl: string | null
 }
@@ -48,6 +49,7 @@ export async function getAllOrders(): Promise<AdminOrder[]> {
       name: orderItems.nameSnapshot,
       colorValue: orderItems.colorValue,
       sizeValue: orderItems.sizeValue,
+      quantity: orderItems.quantity,
       price: orderItems.priceSnapshot,
       imageUrl: orderItems.imageUrlSnapshot,
     })
@@ -68,6 +70,7 @@ export async function getAllOrders(): Promise<AdminOrder[]> {
       name: item.name,
       colorValue: item.colorValue,
       sizeValue: item.sizeValue,
+      quantity: item.quantity,
       price: item.price,
       imageUrl: item.imageUrl,
     })

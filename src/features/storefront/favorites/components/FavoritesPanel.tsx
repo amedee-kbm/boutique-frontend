@@ -66,6 +66,7 @@ export function FavoritesPanel({ products }: { products: StoreCard[] }) {
       colorValue: null,
       colorHex: null,
       size: null,
+      quantity: 1,
       imageUrl: product.thumbnail,
     })
     toast.success('Moved to bag')

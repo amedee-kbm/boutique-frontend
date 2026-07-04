@@ -183,6 +183,7 @@ export const orderItems = pgTable('order_items', {
   nameSnapshot: text('name_snapshot').notNull(),
   colorValue: text('color_value'),
   sizeValue: text('size_value'),
+  quantity: integer('quantity').notNull().default(1),
   priceSnapshot: numeric('price_snapshot', { precision: 10, scale: 2 }).notNull(),
   imageUrlSnapshot: text('image_url_snapshot'),
 })

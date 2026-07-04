@@ -45,6 +45,7 @@ export async function placeOrder({
       name_snapshot: item.name,
       color_value: item.colorValue,
       size_value: item.size,
+      quantity: item.quantity,
       price_snapshot: item.price,
       image_url_snapshot: item.imageUrl,
     }))

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, X } from 'lucide-react'
+import { ChevronLeft, Minus, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { formatPrice } from '@/shared/lib/format'
@@ -19,7 +19,7 @@ type Stage = 'list' | 'details' | 'done'
 type FieldErrors = Partial<Record<'name' | 'phone' | 'address', string>>
 
 export function BagList() {
-  const { items, remove, clear, hydrated } = useBag()
+  const { items, remove, setQuantity, clear, hydrated } = useBag()
   const { customer } = useCustomer()
   const [stage, setStage] = useState<Stage>('list')
   const [available, setAvailable] = useState<Set<string> | null>(null)
@@ -64,7 +64,8 @@ export function BagList() {
 
   const isStale = (productId: string) => available !== null && !available.has(productId)
   const liveItems = items.filter((i) => !isStale(i.productId))
-  const total = liveItems.reduce((sum, i) => sum + Number(i.price), 0)
+  const total = liveItems.reduce((sum, i) => sum + Number(i.price) * i.quantity, 0)
+  const totalPieces = liveItems.reduce((sum, i) => sum + i.quantity, 0)
 
   function handleConfirm() {
     const parsed = orderDetailsSchema.safeParse({ name, phone, address, note })
@@ -185,8 +186,8 @@ export function BagList() {
 
         <div className="bg-background/95 fixed bottom-14 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 space-y-3 border-t p-4 backdrop-blur md:bottom-0 md:max-w-2xl">
           <p className="text-muted-foreground text-xs">
-            {liveItems.length} {liveItems.length === 1 ? 'piece' : 'pieces'} · about{' '}
-            {formatPrice(total)}. No payment now — the seller will contact you to confirm.
+            {totalPieces} {totalPieces === 1 ? 'piece' : 'pieces'} · about {formatPrice(total)}. No
+            payment now — the seller will contact you to confirm.
           </p>
           <Button
             type="button"
@@ -223,7 +224,28 @@ export function BagList() {
                 {stale ? (
                   <p className="text-destructive text-xs">No longer available — remove</p>
                 ) : (
-                  <p className="text-sm">{formatPrice(item.price)}</p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="text-sm">{formatPrice(item.price)}</p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(item.key, item.quantity - 1)}
+                        aria-label={`Decrease quantity of ${item.name}`}
+                        className="hover:bg-muted grid size-8 place-items-center rounded-full border"
+                      >
+                        <Minus className="size-3.5" />
+                      </button>
+                      <span className="w-6 text-center text-sm tabular-nums">{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(item.key, item.quantity + 1)}
+                        aria-label={`Increase quantity of ${item.name}`}
+                        className="hover:bg-muted grid size-8 place-items-center rounded-full border"
+                      >
+                        <Plus className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
               <button
@@ -250,7 +272,7 @@ export function BagList() {
           disabled={liveItems.length === 0}
           onClick={() => setStage('details')}
         >
-          Place order ({liveItems.length})
+          Place order ({totalPieces})
         </Button>
       </div>
     </div>
