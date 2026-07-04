@@ -1,16 +1,9 @@
 // Components
 export { FeedCard } from './components/FeedCard'
 export { GridCard } from './components/GridCard'
-export { ProductGallery } from './components/ProductGallery'
-export type { GallerySection } from './components/ProductGallery'
-export { ProductPanel } from './components/ProductPanel'
-export { ProductSwiper } from './components/ProductSwiper'
-export { QuickAddButton } from './components/QuickAddButton'
-export { ColorSquares } from './components/ColorSquares'
-export { ColorStrip } from './components/ColorStrip'
+export { ProductDetail } from './components/ProductDetail'
 
 // Pure helpers / consts (safe in the barrel — no server-only imports)
-export * from './lib/feed-rhythm'
 export * from './lib/product-detail'
 
 // Card types. Type-only re-export — the read service (server-only) is never

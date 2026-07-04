@@ -1,4 +1,8 @@
-import type { GallerySection } from '../components/ProductGallery'
+export interface GallerySection {
+  key: string
+  colourId: string | null
+  images: { id: string; url: string; alt: string | null }[]
+}
 
 export interface DetailColour {
   optionId: string
