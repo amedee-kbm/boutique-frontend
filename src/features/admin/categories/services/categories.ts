@@ -8,15 +8,7 @@ import { categories } from '@/lib/db/schema'
 import { categoryFormSchema } from './categories.schema'
 import { seedDefaultFilters } from './category-filters'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
-
-function slugify(str: string): string {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+import { slugify } from '@/shared/lib/slug'
 
 export async function createCategory(formData: FormData) {
   const gate = await requireAdmin()

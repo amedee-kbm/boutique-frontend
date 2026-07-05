@@ -13,15 +13,7 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { productFormSchema } from './products.schema'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
-
-function slugify(str: string): string {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+import { slugify } from '@/shared/lib/slug'
 
 export async function createProduct(formData: FormData) {
   const gate = await requireAdmin()
