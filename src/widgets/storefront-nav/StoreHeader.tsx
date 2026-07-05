@@ -41,7 +41,7 @@ export function StoreHeader() {
             isDetail && 'hidden md:block'
           )}
         >
-          Zita
+          Zita Boutique
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
