@@ -2,24 +2,29 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, ShoppingBag, MessageSquare, User } from 'lucide-react'
+import {
+  HouseLineIcon,
+  ListMagnifyingGlassIcon,
+  ChatTextIcon,
+  UserSquareIcon,
+} from '@phosphor-icons/react'
 
 import { cn } from '@/shared/lib/utils'
 import { useUnread } from '@/features/storefront/chat'
 
 const TABS = [
-  { href: '/', label: 'Home', icon: Home, match: (p: string) => p === '/' },
+  { href: '/', label: 'Ahabanza', icon: HouseLineIcon, match: (p: string) => p === '/' },
   {
     href: '/shop',
-    label: 'Shop',
-    icon: ShoppingBag,
+    label: 'Shakisha',
+    icon: ListMagnifyingGlassIcon,
     match: (p: string) => p === '/shop' || p.startsWith('/category') || p.startsWith('/product'),
   },
-  { href: '/chat', label: 'Tubaze', icon: MessageSquare, match: (p: string) => p === '/chat' },
+  { href: '/chat', label: 'Tubaze', icon: ChatTextIcon, match: (p: string) => p === '/chat' },
   {
     href: '/account',
-    label: 'Account',
-    icon: User,
+    label: 'Konti',
+    icon: UserSquareIcon,
     match: (p: string) => p.startsWith('/account'),
   },
 ] as const
@@ -46,7 +51,7 @@ export function StoreTabBar() {
             )}
           >
             <span className="relative">
-              <Icon className="size-5" strokeWidth={active ? 2.2 : 1.6} />
+              <Icon className="size-5" weight={active ? 'fill' : 'regular'} />
               {tab.href === '/chat' && hasUnread && (
                 <span className="bg-foreground absolute -top-0.5 -right-1 size-2 rounded-full" />
               )}
