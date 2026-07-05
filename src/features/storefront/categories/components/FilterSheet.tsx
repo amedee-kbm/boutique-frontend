@@ -14,6 +14,7 @@ import {
 } from '@/features/storefront/categories/lib/filters'
 import { filterParsers } from '@/features/storefront/categories/lib/filter-params'
 import { cn } from '@/shared/lib/utils'
+import { CountBadge } from '@/shared/components/CountBadge'
 import { Button } from '@/shared/ui'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/shared/ui'
 
@@ -68,11 +69,7 @@ export function FilterSheet({
           <Button variant="outline" size="sm" className="gap-2 rounded-none">
             <SlidersHorizontal className="size-4" />
             Filters
-            {activeCount > 0 && (
-              <span className="bg-foreground text-background grid size-4 place-items-center rounded-full text-[10px]">
-                {activeCount}
-              </span>
-            )}
+            {activeCount > 0 && <CountBadge count={activeCount} />}
           </Button>
         }
       />
