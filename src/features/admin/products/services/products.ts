@@ -14,6 +14,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { productFormSchema } from './products.schema'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
 import { slugify } from '@/shared/lib/slug'
+import { tempId } from '@/shared/lib/id'
 
 export async function createProduct(formData: FormData) {
   const gate = await requireAdmin()
@@ -87,7 +88,7 @@ export async function createFullProduct(formData: FormData) {
     }
   }
 
-  const productId = crypto.randomUUID()
+  const productId = tempId()
 
   // Upload images to storage before opening the transaction. Keep the paths so a
   // DB failure can clean them up.

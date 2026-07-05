@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 
 import { AddImageDropzone } from '@/shared/components/AddImageDropzone'
+import { tempId } from '@/shared/lib/id'
 import { SortableImageGrid } from './SortableImageGrid'
 
 interface StagedImage {
@@ -33,7 +34,7 @@ export function MediaZone({ onChange }: { onChange?: (files: File[]) => void }) 
     accept: { 'image/*': [] },
     onDrop: (accepted) => {
       const added = accepted.map((file) => ({
-        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+        id: tempId(),
         file,
         url: URL.createObjectURL(file),
       }))

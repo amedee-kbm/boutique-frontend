@@ -1,5 +1,6 @@
 'use client'
 
+import { tempId } from '@/shared/lib/id'
 import { VariantBuilder } from './VariantBuilder'
 
 export interface StagedVariantOption {
@@ -13,10 +14,6 @@ export interface StagedVariantGroup {
   options: StagedVariantOption[]
 }
 
-function uid() {
-  return globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)
-}
-
 export function VariantStager({
   groups,
   onChange,
@@ -28,12 +25,12 @@ export function VariantStager({
     if (selected) {
       const existing = groups.find((g) => g.name === groupName)
       if (!existing) {
-        onChange([...groups, { id: uid(), name: groupName, options: [{ id: uid(), value }] }])
+        onChange([...groups, { id: tempId(), name: groupName, options: [{ id: tempId(), value }] }])
         return
       }
       onChange(
         groups.map((g) =>
-          g.id === existing.id ? { ...g, options: [...g.options, { id: uid(), value }] } : g
+          g.id === existing.id ? { ...g, options: [...g.options, { id: tempId(), value }] } : g
         )
       )
       return
@@ -49,7 +46,7 @@ export function VariantStager({
   }
 
   function addCustomGroup(name: string) {
-    onChange([...groups, { id: uid(), name, options: [] }])
+    onChange([...groups, { id: tempId(), name, options: [] }])
   }
 
   function removeGroup(id: string) {
@@ -59,7 +56,7 @@ export function VariantStager({
   function addCustomOption(groupId: string, value: string) {
     onChange(
       groups.map((g) =>
-        g.id === groupId ? { ...g, options: [...g.options, { id: uid(), value }] } : g
+        g.id === groupId ? { ...g, options: [...g.options, { id: tempId(), value }] } : g
       )
     )
   }

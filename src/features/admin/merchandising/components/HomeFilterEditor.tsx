@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { EditorHeader, FieldRow, ListRow, SubScreen } from '@/features/admin/ui'
 import { FloatingLabelInput } from '@/features/admin/ui'
 import { Button, Switch } from '@/shared/ui'
+import { tempId } from '@/shared/lib/id'
 import type { AdminHomeFilter } from '../services/merchandising-queries'
 import { saveHomeFilters } from '../services/merchandising'
 
@@ -23,12 +24,6 @@ interface EditingState {
   key?: string
   label: string
   href: string
-}
-
-function newKey() {
-  return typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `k${Math.random().toString(36).slice(2)}`
 }
 
 function snapshot(entries: Entry[]) {
@@ -81,7 +76,7 @@ export function HomeFilterEditor({ initial }: { initial: AdminHomeFilter[] }) {
       return
     }
     if (editing.mode === 'new') {
-      setEntries((prev) => [...prev, { key: newKey(), label, href, visible: true }])
+      setEntries((prev) => [...prev, { key: tempId(), label, href, visible: true }])
     } else {
       setEntries((prev) => prev.map((e) => (e.key === editing.key ? { ...e, label, href } : e)))
     }
