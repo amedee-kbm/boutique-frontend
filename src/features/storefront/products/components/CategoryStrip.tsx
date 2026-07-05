@@ -8,6 +8,7 @@ const SHORTCUTS = [
   { label: "Iz'ibirori", href: '/category/ibirori', image: '/dress.svg' },
   { label: "Iz'ikoboyi", href: '/category/ikoboyi', image: '/jean%20dress.svg' },
   { label: 'Complet', href: '/category/complet', image: '/complet.svg' },
+  { label: 'Boubou', href: '/category/boubou', image: '/boubou.svg' },
 ]
 
 export function CategoryStrip() {
@@ -20,11 +21,12 @@ export function CategoryStrip() {
               src={cat.image}
               alt={cat.label}
               fill
-              sizes="32px"
+              sizes="8px"
               className="object-cover"
               unoptimized
             />
           </span>
+          <span className="text-foreground text-xs tracking-wide">{cat.label}</span>
         </Link>
       ))}
     </nav>
