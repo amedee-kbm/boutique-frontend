@@ -13,6 +13,8 @@ import { formatPrice } from '@/shared/lib/format'
 import { useFavorites } from '@/features/storefront/favorites'
 import { BagButton } from '@/features/storefront/bag'
 import { Button } from '@/shared/ui'
+import { Eyebrow } from '@/shared/components/Eyebrow'
+import { SectionTitle } from '@/shared/components/SectionTitle'
 import { AddToBagSheet } from './AddToBagSheet'
 import type { ProductDetailData } from '../lib/product-detail'
 import type { SwipeCard } from '../services/product-queries'
@@ -93,9 +95,7 @@ export function ProductDetail({ data, more }: { data: ProductDetailData; more: S
 
       <div className="mx-auto max-w-2xl space-y-4 px-4 py-5 md:px-8">
         <p className="text-2xl">{formatPrice(data.price)}</p>
-        <h1 className="font-heading text-base font-semibold tracking-[0.15em] uppercase">
-          {data.name}
-        </h1>
+        <SectionTitle as="h1">{data.name}</SectionTitle>
         {data.description && (
           <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
             {data.description}
@@ -243,9 +243,9 @@ function FloatButton({
 function MoreInCategory({ list }: { list: SwipeCard[] }) {
   return (
     <section className="border-t px-4 py-6 md:px-8">
-      <h2 className="font-heading mb-3 text-[11px] font-medium tracking-[0.15em] uppercase">
+      <Eyebrow as="h2" className="font-heading mb-3 font-medium">
         More in this category
-      </h2>
+      </Eyebrow>
       <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-4">
         {list.map((card) => (
           <Link key={card.slug} href={`/product/${card.slug}`} className="group block">

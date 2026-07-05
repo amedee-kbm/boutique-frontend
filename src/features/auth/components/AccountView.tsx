@@ -7,6 +7,8 @@ import { useState } from 'react'
 import { AuthService } from '../services/auth.service'
 import { useCustomer } from '../hooks/useCustomer'
 import { Button } from '@/shared/ui'
+import { Eyebrow, eyebrowVariants } from '@/shared/components/Eyebrow'
+import { cn } from '@/shared/lib/utils'
 
 export function AccountView() {
   const { customer, loading } = useCustomer()
@@ -31,7 +33,7 @@ export function AccountView() {
         <Button
           variant="outline"
           render={<Link href="/account/login" />}
-          className="h-12 rounded-none text-[11px] tracking-[0.2em] uppercase"
+          className={cn(eyebrowVariants(), 'h-12 rounded-none')}
         >
           Log in
         </Button>
@@ -39,7 +41,7 @@ export function AccountView() {
           Don&apos;t have an account?{' '}
           <Link
             href="/account/register"
-            className="tracking-[0.15em] uppercase underline-offset-4 hover:underline"
+            className={cn(eyebrowVariants(), 'underline-offset-4 hover:underline')}
           >
             Register
           </Link>
@@ -51,16 +53,14 @@ export function AccountView() {
   return (
     <div className="flex flex-col gap-8 px-6 pt-16 md:mx-auto md:max-w-sm">
       <div className="flex flex-col gap-1">
-        <span className="text-muted-foreground text-[11px] tracking-[0.15em] uppercase">
-          Account
-        </span>
+        <Eyebrow className="text-muted-foreground">Account</Eyebrow>
         <span className="text-sm">{customer.email}</span>
       </div>
       <Button
         variant="outline"
         onClick={handleSignOut}
         disabled={signingOut}
-        className="h-12 rounded-none text-[11px] tracking-[0.2em] uppercase"
+        className={cn(eyebrowVariants(), 'h-12 rounded-none')}
       >
         {signingOut ? 'Signing out…' : 'Sign out'}
       </Button>

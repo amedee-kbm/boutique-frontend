@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { GridCard, type StoreCard } from '@/features/storefront/products'
+import { Eyebrow } from '@/shared/components/Eyebrow'
 import { useBag } from '../hooks/useBag'
 import { getCartSuggestions } from '../services/bag.actions'
 
@@ -28,7 +29,9 @@ export function YouMayAlsoLike() {
 
   return (
     <section className="px-4 pt-8 pb-24">
-      <h2 className="font-heading text-xs tracking-[0.15em] uppercase">You may also like</h2>
+      <Eyebrow as="h2" className="font-heading">
+        You may also like
+      </Eyebrow>
       <div className="-mx-1 mt-3 flex gap-1 overflow-x-auto px-1 pb-2">
         {suggestions.map((product) => (
           <div key={product.id} className="w-36 shrink-0 sm:w-40">

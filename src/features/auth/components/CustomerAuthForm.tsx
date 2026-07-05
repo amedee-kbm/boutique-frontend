@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { Eyebrow, eyebrowVariants } from '@/shared/components/Eyebrow'
+import { cn } from '@/shared/lib/utils'
 import { AuthService } from '../services/auth.service'
 
 type Mode = 'login' | 'register'
@@ -58,13 +60,13 @@ export function CustomerAuthForm({ mode }: { mode: Mode }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-6 pt-10 md:mx-auto md:max-w-sm">
-      <h1 className="text-base tracking-[0.15em] uppercase">{copy.title}</h1>
+      <Eyebrow as="h1" className="text-base">
+        {copy.title}
+      </Eyebrow>
 
       <div className="flex flex-col gap-5">
         <label className="flex flex-col gap-2">
-          <span className="text-muted-foreground text-[11px] tracking-[0.15em] uppercase">
-            Email
-          </span>
+          <Eyebrow className="text-muted-foreground">Email</Eyebrow>
           <input
             type="email"
             required
@@ -76,9 +78,7 @@ export function CustomerAuthForm({ mode }: { mode: Mode }) {
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-muted-foreground text-[11px] tracking-[0.15em] uppercase">
-            Password
-          </span>
+          <Eyebrow className="text-muted-foreground">Password</Eyebrow>
           <input
             type="password"
             required
@@ -97,7 +97,7 @@ export function CustomerAuthForm({ mode }: { mode: Mode }) {
         type="submit"
         variant="outline"
         disabled={pending}
-        className="h-12 rounded-none text-[11px] tracking-[0.2em] uppercase"
+        className={cn(eyebrowVariants(), 'h-12 rounded-none')}
       >
         {pending ? copy.pending : copy.submit}
       </Button>
@@ -106,7 +106,7 @@ export function CustomerAuthForm({ mode }: { mode: Mode }) {
         {copy.altPrompt}{' '}
         <Link
           href={copy.altHref}
-          className="tracking-[0.15em] uppercase underline-offset-4 hover:underline"
+          className={cn(eyebrowVariants(), 'underline-offset-4 hover:underline')}
         >
           {copy.altLabel}
         </Link>

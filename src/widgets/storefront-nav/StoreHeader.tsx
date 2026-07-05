@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { cn } from '@/shared/lib/utils'
+import { eyebrowVariants } from '@/shared/components/Eyebrow'
 import { useUnread } from '@/features/storefront/chat'
 import { BagButton } from '@/features/storefront/bag'
 
@@ -51,7 +52,8 @@ export function StoreHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'relative text-[11px] tracking-[0.15em] uppercase',
+                  eyebrowVariants(),
+                  'relative',
                   active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >

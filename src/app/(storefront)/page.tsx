@@ -6,6 +6,8 @@ import {
 } from '@/features/storefront/products/services/product-queries'
 import { FeedCard } from '@/features/storefront/products'
 import { BrowseShell } from '@/widgets/storefront-nav'
+import { eyebrowVariants } from '@/shared/components/Eyebrow'
+import { cn } from '@/shared/lib/utils'
 
 // Catalog changes in the admin must show immediately; don't serve a build snapshot.
 export const dynamic = 'force-dynamic'
@@ -20,7 +22,7 @@ export default async function HomePage() {
           <div className="bg-background/90 sticky top-14 z-30 flex [scrollbar-width:none] items-center gap-5 overflow-x-auto border-b px-4 py-3 backdrop-blur">
             <Link
               href="/shop"
-              className="text-foreground shrink-0 text-[11px] font-semibold tracking-[0.12em] uppercase"
+              className={cn(eyebrowVariants(), 'text-foreground shrink-0 font-semibold')}
             >
               View all
             </Link>
@@ -28,7 +30,10 @@ export default async function HomePage() {
               <Link
                 key={filter.href}
                 href={filter.href}
-                className="text-muted-foreground hover:text-foreground shrink-0 text-[11px] tracking-[0.12em] uppercase"
+                className={cn(
+                  eyebrowVariants(),
+                  'text-muted-foreground hover:text-foreground shrink-0'
+                )}
               >
                 {filter.label}
               </Link>

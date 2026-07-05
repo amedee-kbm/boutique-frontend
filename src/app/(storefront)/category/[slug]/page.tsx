@@ -13,6 +13,7 @@ import { FilterSheet } from '@/features/storefront/categories'
 import { SortControl } from '@/features/storefront/categories'
 import { AppliedChips } from '@/features/storefront/categories'
 import { BrowseShell } from '@/widgets/storefront-nav'
+import { SectionTitle } from '@/shared/components/SectionTitle'
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -51,9 +52,7 @@ export default async function CategoryPage({
     <BrowseShell>
       <div className="pb-6">
         <div className="border-b px-4 py-3">
-          <h1 className="font-heading text-base font-semibold tracking-[0.2em] uppercase">
-            {category.name}
-          </h1>
+          <SectionTitle as="h1">{category.name}</SectionTitle>
         </div>
 
         <div className="flex items-center justify-between border-b px-2 py-1.5">

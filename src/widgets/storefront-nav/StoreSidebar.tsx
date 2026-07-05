@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { cn } from '@/shared/lib/utils'
+import { Eyebrow } from '@/shared/components/Eyebrow'
 
 // Desktop-only category rail (Kikuu "Related Categories"). Hidden on mobile,
 // where the bottom tab bar carries navigation. Shows from tablet up.
@@ -13,9 +14,9 @@ export function StoreSidebar({ categories }: { categories: { name: string; slug:
   return (
     <aside className="hidden shrink-0 md:block md:w-44 lg:w-52">
       <div className="sticky top-16 py-6">
-        <h2 className="font-heading mb-2 px-2 text-[11px] font-semibold tracking-[0.15em] uppercase">
+        <Eyebrow as="h2" className="font-heading mb-2 px-2 font-semibold">
           Categories
-        </h2>
+        </Eyebrow>
         <nav className="flex flex-col">
           <SidebarLink href="/shop" active={pathname === '/shop'}>
             All

@@ -6,6 +6,7 @@ import { Bookmark } from 'lucide-react'
 import type { StoreCard } from '@/features/storefront/products'
 import { FavoritesPanel } from '@/features/storefront/favorites'
 import { cn } from '@/shared/lib/utils'
+import { eyebrowVariants } from '@/shared/components/Eyebrow'
 import { useBag } from '../hooks/useBag'
 import { BagList } from './BagList'
 import { YouMayAlsoLike } from './YouMayAlsoLike'
@@ -53,7 +54,8 @@ function TabButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'font-heading -mb-px flex items-center gap-1.5 border-b py-3 text-xs tracking-[0.15em] uppercase transition-colors',
+        eyebrowVariants(),
+        'font-heading -mb-px flex items-center gap-1.5 border-b py-3 transition-colors',
         active
           ? 'border-foreground text-foreground font-semibold'
           : 'text-muted-foreground border-transparent'

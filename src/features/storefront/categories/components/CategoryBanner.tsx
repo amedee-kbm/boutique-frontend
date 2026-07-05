@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
+import { SectionTitle } from '@/shared/components/SectionTitle'
+
 export interface CategoryBannerData {
   id: string
   name: string
@@ -24,9 +26,7 @@ export function CategoryBanner({ category }: { category: CategoryBannerData }) {
         ) : null}
         <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <h2 className="font-heading text-lg font-semibold tracking-[0.2em] uppercase">
-            {category.name}
-          </h2>
+          <SectionTitle>{category.name}</SectionTitle>
           <p className="mt-1 text-xs tracking-wide">
             {category.productCount} {category.productCount === 1 ? 'piece' : 'pieces'}
           </p>
