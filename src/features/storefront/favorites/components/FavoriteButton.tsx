@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import type { StoreCard } from '@/features/storefront/products'
 import { useFavorites } from '@/features/storefront/favorites'
+import { IconButton } from '@/shared/components/IconButton'
 
 // The save/favorite heart. Favoriting is account-gated (Zara-style): a guest tap
 // opens a log in / register prompt instead of saving. Lives as an overlay
@@ -37,9 +38,9 @@ export function FavoriteButton({ product }: { product: StoreCard }) {
       aria-pressed={saved}
       className="absolute top-1 right-1 z-10 grid size-11 place-items-center"
     >
-      <span className="bg-background/80 grid size-8 place-items-center rounded-full backdrop-blur">
+      <IconButton as="span" size="sm">
         <Heart className={cn('size-4', saved && 'fill-current')} strokeWidth={1.8} />
-      </span>
+      </IconButton>
     </button>
   )
 }

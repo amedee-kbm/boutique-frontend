@@ -13,6 +13,7 @@ import { formatPrice } from '@/shared/lib/format'
 import { useFavorites } from '@/features/storefront/favorites'
 import { BagButton } from '@/features/storefront/bag'
 import { Button } from '@/shared/ui'
+import { IconButton } from '@/shared/components/IconButton'
 import { Eyebrow } from '@/shared/components/Eyebrow'
 import { SectionTitle } from '@/shared/components/SectionTitle'
 import { AddToBagSheet } from './AddToBagSheet'
@@ -65,14 +66,9 @@ export function ProductDetail({ data, more }: { data: ProductDetailData; more: S
       <div className="relative">
         {/* Mobile chrome floating over the photo: back (left), bag (right). */}
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between p-2 md:hidden">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            aria-label="Back"
-            className="bg-background/80 grid size-10 place-items-center rounded-full backdrop-blur"
-          >
+          <IconButton onClick={() => router.back()} aria-label="Back">
             <ChevronLeft className="size-5" strokeWidth={1.8} />
-          </button>
+          </IconButton>
           <BagButton />
         </div>
 
@@ -80,16 +76,16 @@ export function ProductDetail({ data, more }: { data: ProductDetailData; more: S
 
         {/* Favorite + share float on the photo, bottom-right (Kikuu-style). */}
         <div className="absolute right-2 bottom-2 z-20 flex flex-col gap-2">
-          <FloatButton
+          <IconButton
             onClick={handleFavorite}
-            ariaLabel={saved ? 'Remove from favorites' : 'Save to favorites'}
-            pressed={saved}
+            aria-label={saved ? 'Remove from favorites' : 'Save to favorites'}
+            aria-pressed={saved}
           >
             <Bookmark className={cn('size-5', saved && 'fill-current')} strokeWidth={1.7} />
-          </FloatButton>
-          <FloatButton onClick={handleShare} ariaLabel="Share">
+          </IconButton>
+          <IconButton onClick={handleShare} aria-label="Share">
             <Share2 className="size-5" strokeWidth={1.7} />
-          </FloatButton>
+          </IconButton>
         </div>
       </div>
 
@@ -213,30 +209,6 @@ function PhotoCarousel({
         </div>
       )}
     </div>
-  )
-}
-
-function FloatButton({
-  onClick,
-  ariaLabel,
-  pressed,
-  children,
-}: {
-  onClick: () => void
-  ariaLabel: string
-  pressed?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      aria-pressed={pressed}
-      className="bg-background/80 grid size-10 place-items-center rounded-full backdrop-blur"
-    >
-      {children}
-    </button>
   )
 }
 
