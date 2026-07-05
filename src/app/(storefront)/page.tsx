@@ -4,7 +4,7 @@ import {
   getHomeFeed,
   getHomeFilters,
 } from '@/features/storefront/products/services/product-queries'
-import { FeedCard } from '@/features/storefront/products'
+import { CategoryStrip, FeedCard } from '@/features/storefront/products'
 import { BrowseShell } from '@/widgets/storefront-nav'
 import { eyebrowVariants } from '@/shared/components/Eyebrow'
 import { cn } from '@/shared/lib/utils'
@@ -18,6 +18,8 @@ export default async function HomePage() {
   return (
     <BrowseShell>
       <div className="pb-6">
+        <CategoryStrip />
+
         {filters.length > 0 && (
           <div className="bg-background/90 sticky top-14 z-30 flex [scrollbar-width:none] items-center gap-5 overflow-x-auto border-b px-4 py-3 backdrop-blur">
             <Link
