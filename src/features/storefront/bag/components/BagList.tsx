@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Minus, Plus, X } from 'lucide-react'
+import { ChevronLeft, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { formatPrice } from '@/shared/lib/format'
+import { QuantityStepper } from '@/shared/components/QuantityStepper'
 import { useBag } from '../hooks/useBag'
 import { getAvailableProductIds } from '../services/bag.actions'
 import { useGuestName } from '@/features/storefront/chat'
@@ -226,25 +227,12 @@ export function BagList() {
                 ) : (
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <p className="text-sm">{formatPrice(item.price)}</p>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(item.key, item.quantity - 1)}
-                        aria-label={`Decrease quantity of ${item.name}`}
-                        className="hover:bg-muted grid size-8 place-items-center rounded-full border"
-                      >
-                        <Minus className="size-3.5" />
-                      </button>
-                      <span className="w-6 text-center text-sm tabular-nums">{item.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(item.key, item.quantity + 1)}
-                        aria-label={`Increase quantity of ${item.name}`}
-                        className="hover:bg-muted grid size-8 place-items-center rounded-full border"
-                      >
-                        <Plus className="size-3.5" />
-                      </button>
-                    </div>
+                    <QuantityStepper
+                      value={item.quantity}
+                      onChange={(next) => setQuantity(item.key, next)}
+                      size="sm"
+                      name={item.name}
+                    />
                   </div>
                 )}
               </div>

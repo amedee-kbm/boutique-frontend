@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Minus, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/shared/lib/utils'
@@ -9,6 +8,7 @@ import { formatPrice } from '@/shared/lib/format'
 import { bagKey, useBag } from '@/features/storefront/bag'
 import { Button, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui'
 import { ProductThumb } from '@/shared/components/ProductThumb'
+import { QuantityStepper } from '@/shared/components/QuantityStepper'
 import type { DetailColour } from '../lib/product-detail'
 
 // The pieces the sheet needs to build a bag line — a structural subset of
@@ -123,26 +123,7 @@ export function AddToBagSheet({
 
           <div>
             <p className="mb-2 text-sm font-medium">Quantity</p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-                aria-label="Decrease quantity"
-                className="hover:bg-muted grid size-11 place-items-center rounded-full border disabled:opacity-40"
-              >
-                <Minus className="size-4" />
-              </button>
-              <span className="w-8 text-center text-base tabular-nums">{quantity}</span>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => q + 1)}
-                aria-label="Increase quantity"
-                className="hover:bg-muted grid size-11 place-items-center rounded-full border"
-              >
-                <Plus className="size-4" />
-              </button>
-            </div>
+            <QuantityStepper value={quantity} onChange={setQuantity} min={1} />
           </div>
         </div>
 
