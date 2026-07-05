@@ -5,18 +5,18 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import useEmblaCarousel from 'embla-carousel-react'
-import { Bookmark, ChevronLeft, MessageSquare, Share2 } from 'lucide-react'
+import { Bookmark, ChevronLeft, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/shared/lib/utils'
 import { formatPrice } from '@/shared/lib/format'
 import { useFavorites } from '@/features/storefront/favorites'
 import { BagButton } from '@/features/storefront/bag'
-import { Button } from '@/shared/ui'
 import { IconButton } from '@/shared/components/IconButton'
 import { Eyebrow } from '@/shared/components/Eyebrow'
 import { SectionTitle } from '@/shared/components/SectionTitle'
 import { AddToBagSheet } from './AddToBagSheet'
+import { BuyActions } from './BuyActions'
 import type { ProductDetailData } from '../lib/product-detail'
 import type { SwipeCard } from '../services/product-queries'
 
@@ -100,21 +100,7 @@ export function ProductDetail({ data, more }: { data: ProductDetailData; more: S
 
         {/* Desktop CTA lives inline; mobile gets the sticky bar below. */}
         <div className="hidden gap-3 pt-2 md:flex">
-          <Button
-            type="button"
-            className="h-12 flex-1 rounded-none"
-            onClick={() => setSheetOpen(true)}
-          >
-            Add to bag
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1 rounded-none"
-            render={<Link href="/chat" />}
-          >
-            <MessageSquare className="size-4" /> Chat
-          </Button>
+          <BuyActions onAddToBag={() => setSheetOpen(true)} />
         </div>
       </div>
 
@@ -122,21 +108,7 @@ export function ProductDetail({ data, more }: { data: ProductDetailData; more: S
 
       {/* Mobile sticky purchase bar: Add to bag + Chat. */}
       <div className="bg-background/95 fixed bottom-0 left-1/2 z-30 flex w-full max-w-[480px] -translate-x-1/2 items-center gap-3 border-t p-3 backdrop-blur md:hidden">
-        <Button
-          type="button"
-          className="h-12 flex-1 rounded-none"
-          onClick={() => setSheetOpen(true)}
-        >
-          Add to bag
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-12 flex-1 rounded-none"
-          render={<Link href="/chat" />}
-        >
-          <MessageSquare className="size-4" /> Chat
-        </Button>
+        <BuyActions onAddToBag={() => setSheetOpen(true)} />
       </div>
 
       <AddToBagSheet product={data} open={sheetOpen} onOpenChange={setSheetOpen} />
