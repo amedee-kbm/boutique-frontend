@@ -25,6 +25,7 @@ import { Input } from '@/shared/ui'
 import { Badge } from '@/shared/ui'
 import { Checkbox } from '@/shared/ui'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui'
+import { AddValueInput } from '@/shared/components/AddValueInput'
 import { cn } from '@/shared/lib/utils'
 import {
   VARIANT_PRESET_TYPES,
@@ -55,45 +56,6 @@ interface VariantBuilderProps {
   onReorderGroups: (orderedGroupIds: string[]) => void
   // Edit-mode only: renders a per-option control (e.g. a colour swatch image picker).
   renderOptionTrailing?: (groupId: string, option: BuilderOption) => ReactNode
-}
-
-function ValueInput({
-  onAdd,
-  placeholder,
-  addLabel,
-}: {
-  onAdd: (value: string) => void
-  placeholder: string
-  addLabel: string
-}) {
-  const [value, setValue] = useState('')
-
-  function submit() {
-    const trimmed = value.trim()
-    if (!trimmed) return
-    onAdd(trimmed)
-    setValue('')
-  }
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        submit()
-      }}
-      className="flex items-center gap-2"
-    >
-      <Input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={placeholder}
-        className="h-9"
-      />
-      <Button type="submit" size="icon-sm" variant="outline" aria-label={addLabel}>
-        <Plus className="size-4" />
-      </Button>
-    </form>
-  )
 }
 
 // Token field that opens a checkbox checklist of preset values, mirroring
@@ -648,7 +610,7 @@ export function VariantBuilder({
           </div>
         )}
 
-        <ValueInput
+        <AddValueInput
           placeholder="Add a value (e.g. Cropped)"
           addLabel="Add option"
           onAdd={(value) => onAddCustomOption(group!.id, value)}

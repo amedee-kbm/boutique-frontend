@@ -14,32 +14,7 @@ import type { CategoryFilter } from '@/shared/types'
 import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
 import { Badge } from '@/shared/ui'
-
-function OptionInput({ onAdd }: { onAdd: (value: string) => void }) {
-  const [value, setValue] = useState('')
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        const trimmed = value.trim()
-        if (!trimmed) return
-        onAdd(trimmed)
-        setValue('')
-      }}
-      className="flex items-center gap-2"
-    >
-      <Input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Add a value (e.g. Midi)"
-        className="h-7"
-      />
-      <Button type="submit" size="icon-sm" variant="outline" aria-label="Add value">
-        <Plus className="size-4" />
-      </Button>
-    </form>
-  )
-}
+import { AddValueInput } from '@/shared/components/AddValueInput'
 
 export function CategoryFilterManager({
   categoryId,
@@ -146,7 +121,11 @@ export function CategoryFilterManager({
             </div>
           )}
 
-          <OptionInput onAdd={(value) => addOption(filter.id, value)} />
+          <AddValueInput
+            onAdd={(value) => addOption(filter.id, value)}
+            placeholder="Add a value (e.g. Midi)"
+            inputClassName="h-7"
+          />
         </div>
       ))}
 
