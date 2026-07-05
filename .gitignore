@@ -43,3 +43,10 @@ next-env.d.ts
 # playwright
 /playwright-report
 /test-results
+AGENTS.md
+skills-lock.json
+.gitignore
+scripts/seed-catalog.mjs
+.claude/skills/refactor/SKILL.md
+AGENTS.md
+notes/
