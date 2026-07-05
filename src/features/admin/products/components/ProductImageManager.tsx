@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
-import { ImagePlus, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -12,7 +11,7 @@ import {
   setProductImageOption,
   uploadProductImage,
 } from '@/features/admin/products'
-import { cn } from '@/shared/lib/utils'
+import { AddImageDropzone } from '@/shared/components/AddImageDropzone'
 import { SortableImageGrid } from '@/features/admin/ui'
 import {
   DropdownMenu,
@@ -113,45 +112,24 @@ export function ProductImageManager({
 
   if (images.length === 0) {
     return (
-      <div
-        {...getRootProps()}
-        className={cn(
-          'flex aspect-[3/2] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-center transition-colors',
-          isDragActive ? 'border-ring bg-muted/50' : 'border-input hover:bg-muted/30'
-        )}
-      >
-        <input {...getInputProps()} />
-        {isUploading ? (
-          <Loader2 className="text-muted-foreground size-6 animate-spin" />
-        ) : (
-          <ImagePlus className="text-muted-foreground size-6" />
-        )}
-        <p className="text-sm font-medium">
-          {isDragActive ? 'Drop the photos here' : 'Add images'}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          PNG or JPG · the first photo is the main one
-        </p>
-      </div>
+      <AddImageDropzone
+        variant="empty"
+        busy={isUploading}
+        getRootProps={getRootProps}
+        getInputProps={getInputProps}
+        isDragActive={isDragActive}
+      />
     )
   }
 
   const addTile = (
-    <div
-      {...getRootProps()}
-      className={cn(
-        'flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed text-center transition-colors',
-        isDragActive ? 'border-ring bg-muted/50' : 'border-input hover:bg-muted/30'
-      )}
-    >
-      <input {...getInputProps()} />
-      {isUploading ? (
-        <Loader2 className="text-muted-foreground size-5 animate-spin" />
-      ) : (
-        <Plus className="text-muted-foreground size-5" />
-      )}
-      <span className="text-muted-foreground text-xs">Add</span>
-    </div>
+    <AddImageDropzone
+      variant="tile"
+      busy={isUploading}
+      getRootProps={getRootProps}
+      getInputProps={getInputProps}
+      isDragActive={isDragActive}
+    />
   )
 
   return (
