@@ -8,6 +8,7 @@ import { Badge } from '@/shared/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui'
 import { CategoryDialog } from '@/features/admin/categories'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { EmptyState } from '@/shared/components/EmptyState'
 import type { CategoryFilter } from '@/shared/types'
 
 interface Category {
@@ -21,9 +22,7 @@ interface Category {
 export function CategoriesTable({ categories }: { categories: Category[] }) {
   if (categories.length === 0) {
     return (
-      <p className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
-        No categories yet. Create your first one to start organizing products.
-      </p>
+      <EmptyState title="No categories yet. Create your first one to start organizing products." />
     )
   }
 

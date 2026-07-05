@@ -13,6 +13,7 @@ import { cn } from '@/shared/lib/utils'
 import { FilterChips } from '@/features/admin/ui'
 import { SubScreen } from '@/features/admin/ui'
 import { ProductThumb } from '@/shared/components/ProductThumb'
+import { EmptyState } from '@/shared/components/EmptyState'
 import { Badge } from '@/shared/ui'
 
 type Filter = 'all' | OrderStatus
@@ -69,10 +70,7 @@ export function OrdersList({ orders }: { orders: AdminOrder[] }) {
       <FilterChips options={FILTERS} value={filter} onChange={setFilter} className="mb-4" />
 
       {shown.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-16 text-center">
-          <Package className="text-muted-foreground size-8" />
-          <p className="text-muted-foreground text-sm">No orders here yet.</p>
-        </div>
+        <EmptyState icon={Package} title="No orders here yet." />
       ) : (
         <ul className="bg-background divide-y rounded-lg border">
           {shown.map((order) => (

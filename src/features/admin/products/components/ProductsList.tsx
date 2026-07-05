@@ -15,6 +15,7 @@ import { Button } from '@/shared/ui'
 import { Input } from '@/shared/ui'
 import { Switch } from '@/shared/ui'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { EmptyState } from '@/shared/components/EmptyState'
 import { FilterChips } from '@/features/admin/ui'
 import { ListRow } from '@/features/admin/ui'
 
@@ -92,11 +93,7 @@ export function ProductsList({ products }: { products: Product[] }) {
   }, [products, query, filter])
 
   if (products.length === 0) {
-    return (
-      <p className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
-        No products yet. Add your first product to get started.
-      </p>
-    )
+    return <EmptyState title="No products yet. Add your first product to get started." />
   }
 
   return (

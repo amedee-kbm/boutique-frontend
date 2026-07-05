@@ -6,6 +6,7 @@ import { ChevronRight, MessageCircle } from 'lucide-react'
 import { getAllChatSessions } from '@/features/admin/chat/services/chat-queries'
 import { cn } from '@/shared/lib/utils'
 import { PageHeader } from '@/shared/components/PageHeader'
+import { EmptyState } from '@/shared/components/EmptyState'
 import { InboxRealtime } from '@/features/admin/chat'
 import { Avatar, AvatarFallback } from '@/shared/ui'
 import { Badge } from '@/shared/ui'
@@ -24,12 +25,10 @@ export default async function ChatInboxPage() {
       <PageHeader title="Chat" description="Conversations with your customers." />
 
       {sessions.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-16 text-center">
-          <MessageCircle className="text-muted-foreground size-8" />
-          <p className="text-muted-foreground text-sm">
-            No conversations yet. They&apos;ll appear here when a customer starts a chat.
-          </p>
-        </div>
+        <EmptyState
+          icon={MessageCircle}
+          title="No conversations yet. They'll appear here when a customer starts a chat."
+        />
       ) : (
         <ul className="bg-background divide-y rounded-lg border">
           {sessions.map((session) => {
