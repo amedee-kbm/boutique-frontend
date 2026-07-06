@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ChevronLeft, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -23,7 +24,6 @@ export function BagList() {
   const { items, remove, setQuantity, clear, hydrated } = useBag()
   const { customer } = useCustomer()
   const [stage, setStage] = useState<Stage>('list')
-  const [available, setAvailable] = useState<Set<string> | null>(null)
   const [placing, startPlacing] = useTransition()
 
   const persistedName = useGuestName()
@@ -50,18 +50,17 @@ export function BagList() {
     })
   }, [customer])
 
-  useEffect(() => {
-    if (!hydrated) return
-    const ids = items.map((i) => i.productId)
-    let cancelled = false
-    const lookup = ids.length === 0 ? Promise.resolve<string[]>([]) : getAvailableProductIds(ids)
-    lookup.then((ok) => {
-      if (!cancelled) setAvailable(new Set(ok))
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [hydrated, items])
+  // Which of the bagged products are still visible/available. Re-checked whenever
+  // the set of product ids changes; the previous result is kept during a refetch
+  // so lines don't flash "unavailable" mid-lookup.
+  const productIds = items.map((i) => i.productId)
+  const { data: available = null } = useQuery({
+    queryKey: ['bag-availability', [...productIds].sort()],
+    enabled: hydrated,
+    placeholderData: keepPreviousData,
+    queryFn: async () =>
+      new Set(productIds.length === 0 ? [] : await getAvailableProductIds(productIds)),
+  })
 
   const isStale = (productId: string) => available !== null && !available.has(productId)
   const liveItems = items.filter((i) => !isStale(i.productId))

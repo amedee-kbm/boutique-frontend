@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -20,19 +21,15 @@ function urlBase64ToUint8Array(base64String: string) {
 export function EnableNotifications() {
   const ready = useGuestReady()
   const sessionId = useGuestSession()?.sessionId ?? null
-  const [caps, setCaps] = useState<{
-    supported: boolean
-    isIOS: boolean
-    isStandalone: boolean
-  } | null>(null)
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    let active = true
-    // Detect capabilities and any existing subscription off the effect body so
-    // state is only set from an async callback (no synchronous setState).
-    void (async () => {
+  // Detect push capabilities and any existing subscription once, off the render
+  // path. `subscribed` seeds the dismissed state so an already-opted-in guest
+  // never sees the prompt.
+  const { data: caps } = useQuery({
+    queryKey: ['push-capabilities'],
+    queryFn: async () => {
       const supported =
         'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
@@ -47,16 +44,11 @@ export function EnableNotifications() {
           // no registration yet — leave the opt-in visible
         }
       }
+      return { supported, isIOS, isStandalone, subscribed }
+    },
+  })
 
-      if (!active) return
-      setCaps({ supported, isIOS, isStandalone })
-      if (subscribed) setDone(true)
-    })()
-
-    return () => {
-      active = false
-    }
-  }, [])
+  const isDone = done || !!caps?.subscribed
 
   async function subscribe() {
     if (!sessionId) return
@@ -89,7 +81,7 @@ export function EnableNotifications() {
     }
   }
 
-  if (!ready || !sessionId || !caps || !caps.supported || done) return null
+  if (!ready || !sessionId || !caps || !caps.supported || isDone) return null
   if (Notification.permission === 'denied') return null
 
   // On iOS, web push only works once the site is installed to the home screen.

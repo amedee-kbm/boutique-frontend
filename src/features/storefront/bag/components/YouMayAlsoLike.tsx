@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 
-import { GridCard, type StoreCard } from '@/features/storefront/products'
+import { GridCard } from '@/features/storefront/products'
 import { Eyebrow } from '@/shared/components/Eyebrow'
 import { useBag } from '../hooks/useBag'
 import { getCartSuggestions } from '../services/bag.actions'
@@ -12,18 +12,12 @@ import { getCartSuggestions } from '../services/bag.actions'
 // and pricing stay consistent with the rest of the storefront.
 export function YouMayAlsoLike() {
   const { items, hydrated } = useBag()
-  const [suggestions, setSuggestions] = useState<StoreCard[]>([])
-
-  useEffect(() => {
-    if (!hydrated) return
-    let cancelled = false
-    getCartSuggestions(items.map((i) => i.productId)).then((rows) => {
-      if (!cancelled) setSuggestions(rows)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [hydrated, items])
+  const productIds = items.map((i) => i.productId)
+  const { data: suggestions = [] } = useQuery({
+    queryKey: ['cart-suggestions', [...productIds].sort()],
+    enabled: hydrated,
+    queryFn: () => getCartSuggestions(productIds),
+  })
 
   if (suggestions.length === 0) return null
 
