@@ -15,23 +15,38 @@ import { productFormSchema } from './products.schema'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
 import { slugify } from '@/shared/lib/slug'
 import { tempId } from '@/shared/lib/id'
+import { firstZodError, isUniqueViolation } from '@/shared/lib/error'
+
+const SLUG_CONFLICT = 'A product with that slug already exists.'
+const SAVE_FAILED = 'Could not save the product. Please try again.'
+
+// Build the product payload from the submitted FormData and validate it.
+// `slugFallback` slugifies the name when no slug is supplied (create flow);
+// update passes it through untouched so an admin can't silently re-slug on edit.
+function parseProductForm(formData: FormData, { slugFallback }: { slugFallback: boolean }) {
+  const name = formData.get('name')
+  const slug = formData.get('slug')
+  return productFormSchema.safeParse({
+    name,
+    slug: slugFallback ? slug || slugify(String(name)) : slug,
+    description: formData.get('description') || undefined,
+    price: formData.get('price'),
+    categoryId: formData.get('categoryId') || null,
+    visible: formData.get('visible') === 'true',
+  })
+}
+
+function revalidateProductEdit(id: string) {
+  revalidatePath(`/admin/products/${id}/edit`)
+}
 
 export async function createProduct(formData: FormData) {
   const gate = await requireAdmin()
   if (gate.error) return { error: gate.error, id: null }
 
-  const raw = {
-    name: formData.get('name'),
-    slug: formData.get('slug') || slugify(String(formData.get('name'))),
-    description: formData.get('description') || undefined,
-    price: formData.get('price'),
-    categoryId: formData.get('categoryId') || null,
-    visible: formData.get('visible') === 'true',
-  }
-
-  const parsed = productFormSchema.safeParse(raw)
+  const parsed = parseProductForm(formData, { slugFallback: true })
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Invalid input', id: null }
+    return { error: firstZodError(parsed.error), id: null }
   }
 
   try {
@@ -49,8 +64,8 @@ export async function createProduct(formData: FormData) {
 
     revalidatePath('/admin/products')
     return { error: null, id: product.id }
-  } catch {
-    return { error: 'A product with that slug already exists.', id: null }
+  } catch (err) {
+    return { error: isUniqueViolation(err) ? SLUG_CONFLICT : SAVE_FAILED, id: null }
   }
 }
 
@@ -64,18 +79,9 @@ export async function createFullProduct(formData: FormData) {
   const gate = await requireAdmin()
   if (gate.error) return { error: gate.error, id: null }
 
-  const raw = {
-    name: formData.get('name'),
-    slug: formData.get('slug') || slugify(String(formData.get('name'))),
-    description: formData.get('description') || undefined,
-    price: formData.get('price'),
-    categoryId: formData.get('categoryId') || null,
-    visible: formData.get('visible') === 'true',
-  }
-
-  const parsed = productFormSchema.safeParse(raw)
+  const parsed = parseProductForm(formData, { slugFallback: true })
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Invalid input', id: null }
+    return { error: firstZodError(parsed.error), id: null }
   }
 
   let groups: { name: string; options: string[] }[] = []
@@ -147,9 +153,9 @@ export async function createFullProduct(formData: FormData) {
         }
       }
     })
-  } catch {
+  } catch (err) {
     if (uploadedPaths.length) await supabase.storage.from('product-images').remove(uploadedPaths)
-    return { error: 'A product with that slug already exists.', id: null }
+    return { error: isUniqueViolation(err) ? SLUG_CONFLICT : SAVE_FAILED, id: null }
   }
 
   revalidatePath('/admin/products')
@@ -160,18 +166,9 @@ export async function updateProduct(id: string, formData: FormData) {
   const gate = await requireAdmin()
   if (gate.error) return { error: gate.error }
 
-  const raw = {
-    name: formData.get('name'),
-    slug: formData.get('slug'),
-    description: formData.get('description') || undefined,
-    price: formData.get('price'),
-    categoryId: formData.get('categoryId') || null,
-    visible: formData.get('visible') === 'true',
-  }
-
-  const parsed = productFormSchema.safeParse(raw)
+  const parsed = parseProductForm(formData, { slugFallback: false })
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+    return { error: firstZodError(parsed.error) }
   }
 
   try {
@@ -187,12 +184,12 @@ export async function updateProduct(id: string, formData: FormData) {
         updatedAt: new Date(),
       })
       .where(eq(products.id, id))
-  } catch {
-    return { error: 'A product with that slug already exists.' }
+  } catch (err) {
+    return { error: isUniqueViolation(err) ? SLUG_CONFLICT : SAVE_FAILED }
   }
 
   revalidatePath('/admin/products')
-  revalidatePath(`/admin/products/${id}/edit`)
+  revalidateProductEdit(id)
   return { error: null }
 }
 
@@ -266,7 +263,7 @@ export async function uploadProductImage(productId: string, formData: FormData, 
     position: resolvedPosition,
   })
 
-  revalidatePath(`/admin/products/${productId}/edit`)
+  revalidateProductEdit(productId)
   return { error: null, url: publicUrl }
 }
 
@@ -284,7 +281,7 @@ export async function setProductImageOption(imageId: string, optionId: string | 
 
   await db.update(productImages).set({ optionId }).where(eq(productImages.id, imageId))
 
-  revalidatePath(`/admin/products/${rows[0].productId}/edit`)
+  revalidateProductEdit(rows[0].productId)
   return { error: null }
 }
 
@@ -311,7 +308,7 @@ export async function deleteProductImage(imageId: string) {
 
   await db.delete(productImages).where(eq(productImages.id, imageId))
 
-  revalidatePath(`/admin/products/${productId}/edit`)
+  revalidateProductEdit(productId)
   return { error: null }
 }
 
@@ -333,7 +330,7 @@ export async function reorderProductImages(orderedIds: string[]) {
       .limit(1)
 
     if (first[0]) {
-      revalidatePath(`/admin/products/${first[0].productId}/edit`)
+      revalidateProductEdit(first[0].productId)
     }
   }
   return { error: null }

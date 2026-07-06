@@ -9,6 +9,10 @@ import { categoryFormSchema } from './categories.schema'
 import { seedDefaultFilters } from './category-filters'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
 import { slugify } from '@/shared/lib/slug'
+import { firstZodError, isUniqueViolation } from '@/shared/lib/error'
+
+const SLUG_CONFLICT = 'A category with that slug already exists.'
+const SAVE_FAILED = 'Could not save the category. Please try again.'
 
 export async function createCategory(formData: FormData) {
   const gate = await requireAdmin()
@@ -21,7 +25,7 @@ export async function createCategory(formData: FormData) {
 
   const parsed = categoryFormSchema.safeParse(raw)
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+    return { error: firstZodError(parsed.error) }
   }
 
   try {
@@ -30,8 +34,8 @@ export async function createCategory(formData: FormData) {
       .values(parsed.data)
       .returning({ id: categories.id })
     if (created) await seedDefaultFilters(created.id, parsed.data.name)
-  } catch {
-    return { error: 'A category with that slug already exists.' }
+  } catch (err) {
+    return { error: isUniqueViolation(err) ? SLUG_CONFLICT : SAVE_FAILED }
   }
 
   revalidatePath('/admin/categories')
@@ -49,13 +53,13 @@ export async function updateCategory(id: string, formData: FormData) {
 
   const parsed = categoryFormSchema.safeParse(raw)
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+    return { error: firstZodError(parsed.error) }
   }
 
   try {
     await db.update(categories).set(parsed.data).where(eq(categories.id, id))
-  } catch {
-    return { error: 'A category with that slug already exists.' }
+  } catch (err) {
+    return { error: isUniqueViolation(err) ? SLUG_CONFLICT : SAVE_FAILED }
   }
 
   revalidatePath('/admin/categories')
