@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -27,6 +28,46 @@ export function CategoryFilterManager({
   const [newFilter, setNewFilter] = useState('')
   const [, startTransition] = useTransition()
 
+  // Optimistic writes with rollback: snapshot in onMutate, restore on failure.
+  const rollback = (
+    err: Error,
+    _vars: unknown,
+    ctx: { previous: CategoryFilter[] } | undefined
+  ) => {
+    toast.error(err.message)
+    if (ctx) setFilters(ctx.previous)
+  }
+
+  const removeFilterMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await deleteCategoryFilter(id)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: (id: string) => {
+      const previous = filters
+      setFilters((prev) => prev.filter((f) => f.id !== id))
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  const removeOptionMutation = useMutation({
+    mutationFn: async ({ optionId }: { filterId: string; optionId: string }) => {
+      const result = await deleteCategoryFilterOption(optionId)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: ({ filterId, optionId }) => {
+      const previous = filters
+      setFilters((prev) =>
+        prev.map((f) =>
+          f.id === filterId ? { ...f, options: f.options.filter((o) => o.id !== optionId) } : f
+        )
+      )
+      return { previous }
+    },
+    onError: rollback,
+  })
+
   function addFilter(name: string) {
     startTransition(async () => {
       const result = await addCategoryFilter(categoryId, name)
@@ -39,15 +80,7 @@ export function CategoryFilterManager({
   }
 
   function removeFilter(id: string) {
-    const previous = filters
-    setFilters((prev) => prev.filter((f) => f.id !== id))
-    startTransition(async () => {
-      const result = await deleteCategoryFilter(id)
-      if (result.error) {
-        toast.error(result.error)
-        setFilters(previous)
-      }
-    })
+    removeFilterMutation.mutate(id)
   }
 
   function addOption(filterId: string, value: string) {
@@ -64,19 +97,7 @@ export function CategoryFilterManager({
   }
 
   function removeOption(filterId: string, optionId: string) {
-    const previous = filters
-    setFilters((prev) =>
-      prev.map((f) =>
-        f.id === filterId ? { ...f, options: f.options.filter((o) => o.id !== optionId) } : f
-      )
-    )
-    startTransition(async () => {
-      const result = await deleteCategoryFilterOption(optionId)
-      if (result.error) {
-        toast.error(result.error)
-        setFilters(previous)
-      }
-    })
+    removeOptionMutation.mutate({ filterId, optionId })
   }
 
   return (
