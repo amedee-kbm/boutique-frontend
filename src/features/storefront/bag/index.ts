@@ -1,4 +1,5 @@
 export { BagButton } from './components/BagButton'
+export { BagAddFeedback } from './components/BagAddFeedback'
 export { BagHeader } from './components/BagHeader'
 export { BagList } from './components/BagList'
 export { CartTabs } from './components/CartTabs'

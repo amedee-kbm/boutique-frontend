@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { ShoppingBag, X } from 'lucide-react'
-import { toast } from 'sonner'
 
 import type { StoreCard } from '@/features/storefront/products'
 import { bagKey, useBag } from '@/features/storefront/bag'
@@ -69,7 +68,6 @@ export function FavoritesPanel({ products }: { products: StoreCard[] }) {
       quantity: 1,
       imageUrl: product.thumbnail,
     })
-    toast.success('Moved to bag')
   }
 
   return (

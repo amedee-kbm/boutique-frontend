@@ -5,6 +5,7 @@ import { StoreTabBar } from '@/widgets/storefront-nav'
 import { ChatPresence } from '@/features/storefront/chat'
 import { ServiceWorkerRegistrar } from '@/features/pwa'
 import { FavoritesProvider } from '@/features/storefront/favorites'
+import { BagAddFeedback } from '@/features/storefront/bag'
 
 export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -18,6 +19,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
           <StoreTabBar />
           <ChatPresence />
           <ServiceWorkerRegistrar />
+          <BagAddFeedback />
         </div>
       </FavoritesProvider>
     </NuqsAdapter>

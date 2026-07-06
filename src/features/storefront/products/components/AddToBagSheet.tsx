@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { cn } from '@/shared/lib/utils'
 import { formatPrice } from '@/shared/lib/format'
@@ -69,7 +68,6 @@ export function AddToBagSheet({
       quantity,
       imageUrl: colour?.repImageUrl ?? product.fallbackImageUrl,
     })
-    toast.success('Added to your bag')
     onOpenChange(false)
   }
 
