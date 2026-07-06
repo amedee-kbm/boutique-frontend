@@ -20,6 +20,8 @@ Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells af
 | Icons                      | Lucide React (bundled with shadcn)         |
 | Forms                      | React Hook Form + Zod                      |
 | Validation                 | Zod                                        |
+| Server / async state       | TanStack Query (React Query)               |
+| Client persisted state     | Zustand (`persist`)                        |
 | Toasts                     | Sonner                                     |
 | URL state (filters)        | nuqs                                       |
 | Image carousel             | embla-carousel-react (via shadcn Carousel) |
@@ -67,6 +69,20 @@ Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells af
 - **Supabase Realtime** powers the live chat feature between customers and the admin/seller.
 - **Row Level Security (RLS)** must be enabled on all Supabase tables and storage buckets. Never bypass RLS.
 - **Environment variables** — secrets live in `.env.local`, never committed. Supabase anon key is safe to expose; service role key is never sent to the client.
+
+---
+
+## How we do things here (one canonical way per concept)
+
+Reach for the existing primitive before hand-rolling. Each of these has exactly one home:
+
+- **Server / async state → TanStack Query.** Reads are `useQuery`; there is no fetch-in-`useEffect` + `cancelled` guard. Optimistic writes are `useMutation({ onMutate, onError })` — snapshot in `onMutate`, apply immediately, restore the snapshot in `onError` (the `mutationFn` throws on `result.error` so `onError` runs). The `QueryClientProvider` is mounted once in the root layout (`shared/components/QueryProvider`).
+- **Realtime → `usePostgresChanges` + `setQueryData`.** `shared/hooks/usePostgresChanges` owns the Supabase channel subscribe/teardown; pass a channel, `{ table, event?, filter? }`, and a handler. Handlers still `router.refresh()` for the server-rendered order/chat inboxes; message hooks write incoming rows into the query cache via `setQueryData`.
+- **Client persisted state → Zustand `persist`.** `useBag`, `useUnread`, and the guest session are `create(persist(...))` stores keyed to a `localStorage` name, with a `storage`-event listener for cross-tab sync. Gate client-only data on `useHydrated()` (`shared/hooks`) so SSR output matches the first client render.
+- **Customer identity → one source.** `useCustomer()` reads the shared `['customer']` query entry; the single `AuthBridge` (mounted at the root) is the only `onAuthStateChange` listener.
+- **Forms → React Hook Form + Zod** (`useForm` + `zodResolver`), never raw `useState` fields.
+- **Small helpers:** `slugify` (`shared/lib/slug`), `tempId` (`shared/lib/id`), `firstZodError`/`isUniqueViolation` (`shared/lib/error`), `mapChatRow`/`mapChatItemRow` (`shared/lib/chat`), and the shared `ChatMessage` type (`shared/types`).
+- **UI atoms in `shared/components/`:** `CountBadge`, `QuantityStepper`, `IconButton`, `EmptyState`, `AddImageDropzone`, `AddValueInput` (and storefront-local `BuyActions`). Route drift through these — do not re-hand-roll a badge/stepper/empty-state.
 
 ---
 
