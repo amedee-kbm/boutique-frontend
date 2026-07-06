@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
+import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import {
@@ -72,29 +73,46 @@ export function ProductImageManager({
     },
   })
 
-  function handleDelete(id: string) {
-    const previous = images
-    setImages((prev) => prev.filter((img) => img.id !== id))
-    startUpload(async () => {
+  // Optimistic writes with rollback: snapshot in onMutate, restore on failure.
+  const rollback = (err: Error, _vars: unknown, ctx: { previous: ProductImage[] } | undefined) => {
+    toast.error(err.message)
+    if (ctx) setImages(ctx.previous)
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Staged-but-not-yet-persisted images (temp ids) only need the optimistic removal.
       if (id.startsWith('temp-')) return
       const result = await deleteProductImage(id)
-      if (result.error) {
-        toast.error(result.error)
-        setImages(previous)
-      }
-    })
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: (id: string) => {
+      const previous = images
+      setImages((prev) => prev.filter((img) => img.id !== id))
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  const setOptionMutation = useMutation({
+    mutationFn: async ({ id, optionId }: { id: string; optionId: string | null }) => {
+      const result = await setProductImageOption(id, optionId)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: ({ id, optionId }) => {
+      const previous = images
+      setImages((prev) => prev.map((img) => (img.id === id ? { ...img, optionId } : img)))
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  function handleDelete(id: string) {
+    deleteMutation.mutate(id)
   }
 
   function handleSetOption(id: string, optionId: string | null) {
-    const previous = images
-    setImages((prev) => prev.map((img) => (img.id === id ? { ...img, optionId } : img)))
-    startUpload(async () => {
-      const result = await setProductImageOption(id, optionId)
-      if (result.error) {
-        toast.error(result.error)
-        setImages(previous)
-      }
-    })
+    setOptionMutation.mutate({ id, optionId })
   }
 
   function handleReorder(reordered: ProductImage[]) {
