@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { ImageIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -54,6 +55,136 @@ export function VariantManager({
   const [groups, setGroups] = useState<VariantGroup[]>(initialGroups)
   const [, startTransition] = useTransition()
 
+  // Optimistic writes with rollback: each snapshots `groups` in onMutate, applies
+  // the change immediately, and restores the snapshot if the server action fails.
+  const rollback = (err: Error, _vars: unknown, ctx: { previous: VariantGroup[] } | undefined) => {
+    toast.error(err.message)
+    if (ctx) setGroups(ctx.previous)
+  }
+
+  // Untick a value: remove the option, and if it was the group's last one, remove
+  // the group too. Both server calls happen in the one mutation so a failure at
+  // either step rolls the whole optimistic edit back.
+  const removeOptionCascade = useMutation({
+    mutationFn: async ({ group, option }: { group: VariantGroup; option: VariantOption }) => {
+      const removed = await deleteVariantOption(option.id, productId)
+      if (removed.error) throw new Error(removed.error)
+      if (group.options.length === 1) {
+        const removedGroup = await deleteVariantGroup(group.id, productId)
+        if (removedGroup.error) throw new Error(removedGroup.error)
+      }
+    },
+    onMutate: ({ group, option }) => {
+      const previous = groups
+      setGroups((prev) =>
+        prev.flatMap((g) => {
+          if (g.id !== group.id) return [g]
+          const options = g.options.filter((o) => o.id !== option.id)
+          return options.length > 0 ? [{ ...g, options }] : []
+        })
+      )
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  const removeGroupMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await deleteVariantGroup(id, productId)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: (id: string) => {
+      const previous = groups
+      setGroups((prev) => prev.filter((g) => g.id !== id))
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  const removeOptionMutation = useMutation({
+    mutationFn: async ({ optionId }: { groupId: string; optionId: string }) => {
+      const result = await deleteVariantOption(optionId, productId)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: ({ groupId, optionId }) => {
+      const previous = groups
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId ? { ...g, options: g.options.filter((o) => o.id !== optionId) } : g
+        )
+      )
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  const reorderGroupsMutation = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const result = await reorderVariantGroups(productId, orderedIds)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: (orderedIds: string[]) => {
+      const previous = groups
+      setGroups((prev) =>
+        orderedIds.map((id) => prev.find((g) => g.id === id)).filter((g) => g !== undefined)
+      )
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  const setOptionImageMutation = useMutation({
+    mutationFn: async ({
+      optionId,
+      imageId,
+    }: {
+      groupId: string
+      optionId: string
+      imageId: string | null
+    }) => {
+      const result = await setVariantOptionImage(optionId, productId, imageId)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: ({ groupId, optionId, imageId }) => {
+      const previous = groups
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId
+            ? { ...g, options: g.options.map((o) => (o.id === optionId ? { ...o, imageId } : o)) }
+            : g
+        )
+      )
+      return { previous }
+    },
+    onError: rollback,
+  })
+
+  const setOptionHexMutation = useMutation({
+    mutationFn: async ({
+      optionId,
+      hex,
+    }: {
+      groupId: string
+      optionId: string
+      hex: string | null
+    }) => {
+      const result = await setVariantOptionHex(optionId, productId, hex)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: ({ groupId, optionId, hex }) => {
+      const previous = groups
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId
+            ? { ...g, options: g.options.map((o) => (o.id === optionId ? { ...o, hex } : o)) }
+            : g
+        )
+      )
+      return { previous }
+    },
+    onError: rollback,
+  })
+
   function toggleOption(groupName: string, value: string, selected: boolean) {
     if (selected) {
       startTransition(async () => {
@@ -83,35 +214,10 @@ export function VariantManager({
       return
     }
 
-    const previous = groups
     const group = groups.find((g) => g.name === groupName)
     const option = group?.options.find((o) => o.value === value)
     if (!group || !option) return
-    const lastOption = group.options.length === 1
-
-    setGroups((prev) =>
-      prev.flatMap((g) => {
-        if (g.id !== group.id) return [g]
-        const options = g.options.filter((o) => o.id !== option.id)
-        return options.length > 0 ? [{ ...g, options }] : []
-      })
-    )
-
-    startTransition(async () => {
-      const removed = await deleteVariantOption(option.id, productId)
-      if (removed.error) {
-        toast.error(removed.error)
-        setGroups(previous)
-        return
-      }
-      if (lastOption) {
-        const removedGroup = await deleteVariantGroup(group.id, productId)
-        if (removedGroup.error) {
-          toast.error(removedGroup.error)
-          setGroups(previous)
-        }
-      }
-    })
+    removeOptionCascade.mutate({ group, option })
   }
 
   function addCustomGroup(name: string) {
@@ -126,15 +232,7 @@ export function VariantManager({
   }
 
   function removeGroup(id: string) {
-    const previous = groups
-    setGroups((prev) => prev.filter((g) => g.id !== id))
-    startTransition(async () => {
-      const result = await deleteVariantGroup(id, productId)
-      if (result.error) {
-        toast.error(result.error)
-        setGroups(previous)
-      }
-    })
+    removeGroupMutation.mutate(id)
   }
 
   function addCustomOption(groupId: string, value: string) {
@@ -152,69 +250,19 @@ export function VariantManager({
   }
 
   function removeOption(groupId: string, optionId: string) {
-    const previous = groups
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.id === groupId ? { ...g, options: g.options.filter((o) => o.id !== optionId) } : g
-      )
-    )
-    startTransition(async () => {
-      const result = await deleteVariantOption(optionId, productId)
-      if (result.error) {
-        toast.error(result.error)
-        setGroups(previous)
-      }
-    })
+    removeOptionMutation.mutate({ groupId, optionId })
   }
 
   function reorderGroups(orderedIds: string[]) {
-    const previous = groups
-    setGroups((prev) =>
-      orderedIds.map((id) => prev.find((g) => g.id === id)).filter((g) => g !== undefined)
-    )
-    startTransition(async () => {
-      const result = await reorderVariantGroups(productId, orderedIds)
-      if (result.error) {
-        toast.error(result.error)
-        setGroups(previous)
-      }
-    })
+    reorderGroupsMutation.mutate(orderedIds)
   }
 
   function setOptionImage(groupId: string, optionId: string, imageId: string | null) {
-    const previous = groups
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.id === groupId
-          ? { ...g, options: g.options.map((o) => (o.id === optionId ? { ...o, imageId } : o)) }
-          : g
-      )
-    )
-    startTransition(async () => {
-      const result = await setVariantOptionImage(optionId, productId, imageId)
-      if (result.error) {
-        toast.error(result.error)
-        setGroups(previous)
-      }
-    })
+    setOptionImageMutation.mutate({ groupId, optionId, imageId })
   }
 
   function setOptionHex(groupId: string, optionId: string, hex: string | null) {
-    const previous = groups
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.id === groupId
-          ? { ...g, options: g.options.map((o) => (o.id === optionId ? { ...o, hex } : o)) }
-          : g
-      )
-    )
-    startTransition(async () => {
-      const result = await setVariantOptionHex(optionId, productId, hex)
-      if (result.error) {
-        toast.error(result.error)
-        setGroups(previous)
-      }
-    })
+    setOptionHexMutation.mutate({ groupId, optionId, hex })
   }
 
   function renderColorSwatch(groupId: string, option: BuilderOption) {
