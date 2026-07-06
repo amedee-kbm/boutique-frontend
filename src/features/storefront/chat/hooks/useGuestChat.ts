@@ -1,19 +1,20 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+
 import { createClient } from '@/lib/supabase/client'
+import { usePostgresChanges } from '@/shared/hooks/usePostgresChanges'
+import {
+  CHAT_ITEM_SELECT,
+  mapChatItemRow,
+  mapChatRow,
+  type RawChatItemRow,
+} from '@/shared/lib/chat'
+import type { ChatMessage, InquiryItem } from '@/shared/types'
 import { useGuestSession } from './guest'
 import { markChatSeen, markLastMessageAt } from './useUnread'
-import { toast } from 'sonner'
-import type { InquiryItem } from '@/shared/types'
-
-export interface Message {
-  id: string
-  content: string
-  fromAdmin: boolean
-  createdAt: string
-  items: InquiryItem[]
-}
 
 // A Bag or Favorites piece the guest keeps attached to their opening question.
 // Mirrors the snapshot columns on chat_message_items so a card still renders
@@ -27,39 +28,54 @@ export interface ContextItem {
   imageUrl: string | null
 }
 
-interface RawItemRow {
-  id: string
-  product_id: string | null
-  name_snapshot: string
-  color_value: string | null
-  size_value: string | null
-  price_snapshot: string
-  image_url_snapshot: string | null
-  products: { slug: string; visible: boolean } | null
-}
+// Loads a session's messages and the product cards attached to them (batched in
+// one items query), newest last.
+async function loadGuestMessages(sessionId: string): Promise<ChatMessage[]> {
+  const supabase = createClient()
+  const { data: rows } = await supabase
+    .from('chat_messages')
+    .select('id, content, from_admin, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at')
+  if (!rows) return []
 
-function mapItemRow(row: RawItemRow): InquiryItem {
-  return {
-    id: row.id,
-    productId: row.product_id,
-    slug: row.product_id && row.products?.visible ? row.products.slug : null,
-    name: row.name_snapshot,
-    colorValue: row.color_value,
-    sizeValue: row.size_value,
-    price: row.price_snapshot,
-    imageUrl: row.image_url_snapshot,
+  const { data: itemRows } = await supabase
+    .from('chat_message_items')
+    .select(`message_id, ${CHAT_ITEM_SELECT}`)
+    .in(
+      'message_id',
+      rows.map((r) => r.id)
+    )
+
+  const byMessage = new Map<string, InquiryItem[]>()
+  for (const raw of (itemRows as (RawChatItemRow & { message_id: string })[] | null) ?? []) {
+    const list = byMessage.get(raw.message_id) ?? []
+    list.push(mapChatItemRow(raw))
+    byMessage.set(raw.message_id, list)
   }
-}
 
-const ITEM_SELECT =
-  'id, product_id, name_snapshot, color_value, size_value, price_snapshot, image_url_snapshot, products(slug, visible)'
+  return rows.map((r) => mapChatRow(r, byMessage.get(r.id) ?? []))
+}
 
 export function useGuestChat() {
   const sessionId = useGuestSession()?.sessionId ?? null
-  const [messages, setMessages] = useState<Message[]>([])
+  const queryClient = useQueryClient()
+  const key = ['guest-chat', sessionId] as const
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  const { data: messages = [] } = useQuery({
+    queryKey: key,
+    enabled: !!sessionId,
+    queryFn: () => loadGuestMessages(sessionId!),
+  })
+
+  function appendMessage(message: ChatMessage) {
+    queryClient.setQueryData<ChatMessage[]>(key, (prev = []) =>
+      prev.some((m) => m.id === message.id) ? prev : [...prev, message]
+    )
+  }
 
   useEffect(() => {
     if (messages.length) {
@@ -68,97 +84,27 @@ export function useGuestChat() {
     }
   }, [messages])
 
-  useEffect(() => {
-    if (!sessionId) return
-    const supabase = createClient()
-    let cancelled = false
-
-    async function load() {
-      const { data: rows } = await supabase
-        .from('chat_messages')
-        .select('id, content, from_admin, created_at')
-        .eq('session_id', sessionId)
-        .order('created_at')
-      if (!rows) return
-
-      const { data: itemRows } = await supabase
-        .from('chat_message_items')
-        .select(`message_id, ${ITEM_SELECT}`)
-        .in(
-          'message_id',
-          rows.map((r) => r.id)
-        )
-
-      const byMessage = new Map<string, InquiryItem[]>()
-      for (const raw of (itemRows as (RawItemRow & { message_id: string })[] | null) ?? []) {
-        const list = byMessage.get(raw.message_id) ?? []
-        list.push(mapItemRow(raw))
-        byMessage.set(raw.message_id, list)
+  usePostgresChanges<{ id: string; content: string; from_admin: boolean; created_at: string }>(
+    sessionId ? `guest-chat:${sessionId}` : null,
+    { table: 'chat_messages', filter: sessionId ? `session_id=eq.${sessionId}` : undefined },
+    async (payload) => {
+      const row = payload.new as {
+        id: string
+        content: string
+        from_admin: boolean
+        created_at: string
       }
+      if (row.from_admin) markLastMessageAt(row.created_at)
 
-      if (cancelled) return
-      setMessages(
-        rows.map((r) => ({
-          id: r.id as string,
-          content: r.content as string,
-          fromAdmin: r.from_admin as boolean,
-          createdAt: r.created_at as string,
-          items: byMessage.get(r.id as string) ?? [],
-        }))
-      )
+      const { data } = await createClient()
+        .from('chat_message_items')
+        .select(CHAT_ITEM_SELECT)
+        .eq('message_id', row.id)
+        .order('position')
+      const items = ((data as RawChatItemRow[] | null) ?? []).map(mapChatItemRow)
+      appendMessage(mapChatRow(row, items))
     }
-
-    load()
-
-    const channel = supabase
-      .channel(`guest-chat:${sessionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `session_id=eq.${sessionId}`,
-        },
-        async (payload) => {
-          const row = payload.new as {
-            id: string
-            content: string
-            from_admin: boolean
-            created_at: string
-          }
-          if (row.from_admin) markLastMessageAt(row.created_at)
-
-          const { data } = await supabase
-            .from('chat_message_items')
-            .select(ITEM_SELECT)
-            .eq('message_id', row.id)
-            .order('position')
-          const items = ((data as RawItemRow[] | null) ?? []).map(mapItemRow)
-
-          setMessages((prev) =>
-            prev.some((m) => m.id === row.id)
-              ? prev
-              : [
-                  ...prev,
-                  {
-                    id: row.id,
-                    content: row.content,
-                    fromAdmin: row.from_admin,
-                    createdAt: row.created_at,
-                    items,
-                  },
-                ]
-          )
-        }
-      )
-      .subscribe()
-
-    return () => {
-      cancelled = true
-      supabase.removeChannel(channel)
-    }
-  }, [sessionId])
+  )
 
   // `context` is attached only to the guest's FIRST message — their opening
   // question about the pieces they've selected. Later messages carry no items.
@@ -197,10 +143,10 @@ export function useGuestChat() {
       )
       const { data: itemRows } = await supabase
         .from('chat_message_items')
-        .select(ITEM_SELECT)
+        .select(CHAT_ITEM_SELECT)
         .eq('message_id', data.id)
         .order('position')
-      items = ((itemRows as RawItemRow[] | null) ?? []).map(mapItemRow)
+      items = ((itemRows as RawChatItemRow[] | null) ?? []).map(mapChatItemRow)
     }
 
     setSending(false)
@@ -208,20 +154,7 @@ export function useGuestChat() {
       .from('chat_sessions')
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', sessionId)
-    setMessages((prev) =>
-      prev.some((m) => m.id === data.id)
-        ? prev
-        : [
-            ...prev,
-            {
-              id: data.id as string,
-              content: data.content as string,
-              fromAdmin: data.from_admin as boolean,
-              createdAt: data.created_at as string,
-              items,
-            },
-          ]
-    )
+    appendMessage(mapChatRow(data, items))
   }
 
   return {
