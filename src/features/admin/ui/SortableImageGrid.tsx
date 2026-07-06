@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import Image from 'next/image'
 import {
   DndContext,
   closestCenter,
@@ -47,8 +48,19 @@ function SortableCard({
         isDragging && 'ring-ring z-10 opacity-80 ring-2'
       )}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image.url} alt={image.alt ?? ''} className="size-full object-cover" />
+      {image.url.startsWith('blob:') ? (
+        // Staged local previews are object URLs the image optimizer can't fetch.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image.url} alt={image.alt ?? ''} className="size-full object-cover" />
+      ) : (
+        <Image
+          src={image.url}
+          alt={image.alt ?? ''}
+          fill
+          sizes="(max-width: 640px) 33vw, 200px"
+          className="object-cover"
+        />
+      )}
 
       <button
         type="button"
