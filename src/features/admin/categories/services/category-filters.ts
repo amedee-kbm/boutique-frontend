@@ -8,6 +8,7 @@ import { categoryFilterOptions, categoryFilters } from '@/lib/db/schema'
 import { categoryFilterOptionSchema, categoryFilterSchema } from './category-filters.schema'
 import { defaultFiltersForCategory } from '../consts/category-filter-presets'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
+import { firstZodError } from '@/shared/lib/error'
 
 function nextPosition(rows: { position: number }[]) {
   return rows.length > 0 ? (rows[rows.length - 1]?.position ?? -1) + 1 : 0
@@ -37,7 +38,7 @@ export async function addCategoryFilter(categoryId: string, name: string) {
   if (gate.error) return { error: gate.error, filter: null }
 
   const parsed = categoryFilterSchema.safeParse({ name })
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', filter: null }
+  if (!parsed.success) return { error: firstZodError(parsed.error, 'Invalid'), filter: null }
 
   const existing = await db
     .select({ position: categoryFilters.position })
@@ -72,7 +73,7 @@ export async function addCategoryFilterOption(filterId: string, value: string) {
   if (gate.error) return { error: gate.error, option: null }
 
   const parsed = categoryFilterOptionSchema.safeParse({ value })
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', option: null }
+  if (!parsed.success) return { error: firstZodError(parsed.error, 'Invalid'), option: null }
 
   const existing = await db
     .select({ position: categoryFilterOptions.position })

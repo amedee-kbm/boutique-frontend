@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { homeFilters } from '@/lib/db/schema'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
 import { homeFiltersSchema, type HomeFilterEntry } from './merchandising.schema'
+import { firstZodError } from '@/shared/lib/error'
 
 // The editor commits the whole strip at once (EditorHeader Save), so this
 // replaces the table contents in order — position is the array index. Atomic so
@@ -15,7 +16,7 @@ export async function saveHomeFilters(entries: HomeFilterEntry[]) {
   if (gate.error) return { error: gate.error }
 
   const parsed = homeFiltersSchema.safeParse(entries)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' }
+  if (!parsed.success) return { error: firstZodError(parsed.error) }
 
   try {
     await db.transaction(async (tx) => {

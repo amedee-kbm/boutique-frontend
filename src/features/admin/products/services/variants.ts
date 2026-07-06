@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { productVariantGroups, productVariantOptions } from '@/lib/db/schema'
 import { hexColorSchema, variantGroupSchema, variantOptionSchema } from './variants.schema'
 import { requireAdmin } from '@/features/auth/services/admin-guard'
+import { firstZodError } from '@/shared/lib/error'
 
 async function nextPosition(rows: { position: number }[]) {
   return rows.length > 0 ? (rows[rows.length - 1]?.position ?? -1) + 1 : 0
@@ -17,7 +18,7 @@ export async function addVariantGroup(productId: string, name: string) {
   if (gate.error) return { error: gate.error, group: null }
 
   const parsed = variantGroupSchema.safeParse({ name })
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', group: null }
+  if (!parsed.success) return { error: firstZodError(parsed.error, 'Invalid'), group: null }
 
   const existing = await db
     .select({ position: productVariantGroups.position })
@@ -74,7 +75,7 @@ export async function addVariantOption(groupId: string, productId: string, value
   if (gate.error) return { error: gate.error, option: null }
 
   const parsed = variantOptionSchema.safeParse({ value })
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid', option: null }
+  if (!parsed.success) return { error: firstZodError(parsed.error, 'Invalid'), option: null }
 
   const existing = await db
     .select({ position: productVariantOptions.position })
@@ -130,7 +131,7 @@ export async function setVariantOptionHex(optionId: string, productId: string, h
 
   if (hex !== null) {
     const parsed = hexColorSchema.safeParse(hex)
-    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid colour' }
+    if (!parsed.success) return { error: firstZodError(parsed.error, 'Invalid colour') }
   }
   try {
     await db
