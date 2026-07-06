@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Figtree } from 'next/font/google'
 import { Toaster } from '@/shared/ui'
 import { ThemeProvider } from '@/shared/components/theme-provider'
 import { QueryProvider } from '@/shared/components/QueryProvider'
+import { AuthBridge } from '@/features/auth'
 import './globals.css'
 import { cn } from '@/shared/lib/utils'
 
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           disableTransitionOnChange
         >
           <QueryProvider>
+            <AuthBridge />
             {children}
             <Toaster richColors position="top-center" />
           </QueryProvider>
