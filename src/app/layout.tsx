@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Bricolage_Grotesque, Figtree } from 'next/font/google'
 import { Toaster } from '@/shared/ui'
 import { ThemeProvider } from '@/shared/components/theme-provider'
+import { QueryProvider } from '@/shared/components/QueryProvider'
 import './globals.css'
 import { cn } from '@/shared/lib/utils'
 
@@ -50,8 +51,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster richColors position="top-center" />
+          <QueryProvider>
+            {children}
+            <Toaster richColors position="top-center" />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>
