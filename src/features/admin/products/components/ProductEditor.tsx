@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { updateProduct, createFullProduct } from '@/features/admin/products'
@@ -134,19 +135,28 @@ export function ProductEditor({
   const filterSummary =
     filterOptionIds.length > 0 ? `${filterOptionIds.length} selected` : undefined
 
+  // Optimistic filter-assignment toggle with rollback on failure.
+  const filterOptionMutation = useMutation({
+    mutationFn: async ({ optionId, selected }: { optionId: string; selected: boolean }) => {
+      const result = await setProductFilterValue(product!.id, optionId, selected)
+      if (result.error) throw new Error(result.error)
+    },
+    onMutate: ({ optionId, selected }) => {
+      const previous = filterOptionIds
+      setFilterOptionIds((prev) =>
+        selected ? [...prev, optionId] : prev.filter((id) => id !== optionId)
+      )
+      return { previous }
+    },
+    onError: (err, _vars, ctx) => {
+      toast.error(err.message)
+      if (ctx) setFilterOptionIds(ctx.previous)
+    },
+  })
+
   function toggleFilterOption(optionId: string, selected: boolean) {
     if (!product) return
-    const previous = filterOptionIds
-    setFilterOptionIds((prev) =>
-      selected ? [...prev, optionId] : prev.filter((id) => id !== optionId)
-    )
-    startTransition(async () => {
-      const result = await setProductFilterValue(product.id, optionId, selected)
-      if (result.error) {
-        toast.error(result.error)
-        setFilterOptionIds(previous)
-      }
-    })
+    filterOptionMutation.mutate({ optionId, selected })
   }
 
   const categoryName = categories.find((c) => c.id === categoryId)?.name
