@@ -57,23 +57,6 @@ export interface HomeCard extends StoreCard {
   sizes: string[]
 }
 
-export async function getHomeFeed(limit = 20): Promise<HomeCard[]> {
-  return db
-    .select({
-      id: products.id,
-      name: products.name,
-      slug: products.slug,
-      price: products.price,
-      thumbnail: thumbnailSql,
-      hexes: hexesSql,
-      sizes: sizesSql,
-    })
-    .from(products)
-    .where(eq(products.visible, true))
-    .orderBy(desc(products.featured), desc(products.createdAt))
-    .limit(limit)
-}
-
 export interface HomeFilter {
   label: string
   href: string

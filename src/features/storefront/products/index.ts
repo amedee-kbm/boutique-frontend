@@ -1,6 +1,7 @@
 // Components
 export { CategoryStrip } from './components/CategoryStrip'
 export { FeedCard } from './components/FeedCard'
+export { HomeFeed } from './components/HomeFeed'
 export { GridCard } from './components/GridCard'
 export { ProductDetail } from './components/ProductDetail'
 

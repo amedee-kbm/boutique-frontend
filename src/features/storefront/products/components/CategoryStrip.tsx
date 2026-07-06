@@ -13,7 +13,7 @@ const SHORTCUTS = [
 
 export function CategoryStrip() {
   return (
-    <nav className="flex [scrollbar-width:none] items-start gap-6 overflow-x-auto px-4 pt-4 pb-3 md:hidden">
+    <nav className="flex [scrollbar-width:none] items-start justify-center gap-6 overflow-x-auto px-4 pt-4 pb-3 md:hidden">
       {SHORTCUTS.map((cat) => (
         <Link key={cat.href} href={cat.href} className="flex shrink-0 flex-col items-center gap-2">
           <span className="bg-muted relative size-16 overflow-hidden rounded-full">

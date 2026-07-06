@@ -1,10 +1,8 @@
 import Link from 'next/link'
 
-import {
-  getHomeFeed,
-  getHomeFilters,
-} from '@/features/storefront/products/services/product-queries'
-import { CategoryStrip, FeedCard } from '@/features/storefront/products'
+import { getHomeFilters } from '@/features/storefront/products/services/product-queries'
+import { loadHomeFeedPage } from '@/features/storefront/products/services/product.actions'
+import { CategoryStrip, HomeFeed } from '@/features/storefront/products'
 import { BrowseShell } from '@/widgets/storefront-nav'
 import { eyebrowVariants } from '@/shared/components/Eyebrow'
 import { cn } from '@/shared/lib/utils'
@@ -13,7 +11,8 @@ import { cn } from '@/shared/lib/utils'
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const [feed, filters] = await Promise.all([getHomeFeed(), getHomeFilters()])
+  const seed = crypto.randomUUID()
+  const [initial, filters] = await Promise.all([loadHomeFeedPage(seed, 0), getHomeFilters()])
 
   return (
     <BrowseShell>
@@ -43,16 +42,12 @@ export default async function HomePage() {
           </div>
         )}
 
-        {feed.length === 0 ? (
+        {initial.length === 0 ? (
           <p className="text-muted-foreground px-4 py-16 text-center text-sm">
             Nothing here yet. Check back soon.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-7 px-3 pt-3 lg:grid-cols-3 xl:grid-cols-4">
-            {feed.map((product, i) => (
-              <FeedCard key={product.id} product={product} priority={i === 0} />
-            ))}
-          </div>
+          <HomeFeed initial={initial} seed={seed} />
         )}
       </div>
     </BrowseShell>
