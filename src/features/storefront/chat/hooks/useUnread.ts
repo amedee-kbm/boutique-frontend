@@ -1,61 +1,55 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
-const LAST_MESSAGE_KEY = 'zita-chat-last-message-at'
-const LAST_SEEN_KEY = 'zita-chat-last-seen-at'
-const CHANGE_EVENT = 'zita-unread-change'
+import { useHydrated } from '@/shared/hooks/useHydrated'
 
-function computeUnread(): boolean {
-  try {
-    const lastMessage = localStorage.getItem(LAST_MESSAGE_KEY)
-    if (!lastMessage) return false
-    const lastSeen = localStorage.getItem(LAST_SEEN_KEY)
-    return !lastSeen || new Date(lastMessage) > new Date(lastSeen)
-  } catch {
-    return false
-  }
+interface UnreadState {
+  lastMessageAt: string | null
+  lastSeenAt: string | null
+  setLastMessageAt: (at: string) => void
+  markSeen: () => void
 }
 
-function emitChange() {
-  window.dispatchEvent(new Event(CHANGE_EVENT))
+const useUnreadStore = create<UnreadState>()(
+  persist(
+    (set) => ({
+      lastMessageAt: null,
+      lastSeenAt: null,
+      setLastMessageAt: (at) => set({ lastMessageAt: at }),
+      markSeen: () => set({ lastSeenAt: new Date().toISOString() }),
+    }),
+    {
+      name: 'zita-chat-unread-v1',
+      storage: createJSONStorage(() =>
+        typeof window !== 'undefined' ? window.localStorage : (undefined as unknown as Storage)
+      ),
+    }
+  )
+)
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'zita-chat-unread-v1') void useUnreadStore.persist.rehydrate()
+  })
 }
 
 // Called by the chat realtime subscription when an admin reply arrives.
 export function markLastMessageAt(at: string) {
-  try {
-    localStorage.setItem(LAST_MESSAGE_KEY, at)
-    emitChange()
-  } catch {
-    // ignore
-  }
+  useUnreadStore.getState().setLastMessageAt(at)
 }
 
 // Called when the customer views the chat thread.
 export function markChatSeen() {
-  try {
-    localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString())
-    emitChange()
-  } catch {
-    // ignore
-  }
+  useUnreadStore.getState().markSeen()
 }
 
 export function useUnread() {
-  const [hasUnread, setHasUnread] = useState(false)
-
-  useEffect(() => {
-    const update = () => setHasUnread(computeUnread())
-    update()
-    window.addEventListener(CHANGE_EVENT, update)
-    window.addEventListener('focus', update)
-    window.addEventListener('storage', update)
-    return () => {
-      window.removeEventListener(CHANGE_EVENT, update)
-      window.removeEventListener('focus', update)
-      window.removeEventListener('storage', update)
-    }
-  }, [])
-
+  const lastMessageAt = useUnreadStore((s) => s.lastMessageAt)
+  const lastSeenAt = useUnreadStore((s) => s.lastSeenAt)
+  const hydrated = useHydrated()
+  const hasUnread =
+    hydrated && !!lastMessageAt && (!lastSeenAt || new Date(lastMessageAt) > new Date(lastSeenAt))
   return { hasUnread }
 }

@@ -1,9 +1,9 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
-const STORAGE_KEY = 'zita-bag-v1'
-const CHANGE_EVENT = 'zita-bag-change'
+import { useHydrated } from '@/shared/hooks/useHydrated'
 
 export interface BagItem {
   // Unique per product + chosen colour + size, so the same product in two
@@ -25,102 +25,81 @@ export function bagKey(productId: string, colorValue: string | null, size: strin
 }
 
 const EMPTY: BagItem[] = []
-const returnTrue = () => true
-const returnFalse = () => false
 
-// Module-level cache so getSnapshot returns a stable reference between renders;
-// useSyncExternalStore loops forever if the snapshot identity changes each call.
-let cache: BagItem[] = EMPTY
-let initialized = false
-
-function read(): BagItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as BagItem[]) : EMPTY
-  } catch {
-    return EMPTY
-  }
+interface BagState {
+  items: BagItem[]
+  // Bumped on every add — including a re-add that only bumps a line's quantity.
+  // The semantic "an item was added" signal: feedback/animation keys off it, and
+  // it never changes on remove/quantity-down. Not persisted.
+  addNonce: number
+  add: (item: BagItem) => void
+  setQuantity: (key: string, quantity: number) => void
+  remove: (key: string) => void
+  clear: () => void
 }
 
-function ensureInitialized() {
-  if (initialized) return
-  cache = read()
-  initialized = true
-}
+const useBagStore = create<BagState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      addNonce: 0,
+      add: (item) => {
+        const items = get().items
+        const existing = items.find((i) => i.key === item.key)
+        const next = existing
+          ? // Same product + colour + size is one line; a repeat add bumps its count.
+            items.map((i) =>
+              i.key === item.key ? { ...i, quantity: i.quantity + item.quantity } : i
+            )
+          : [...items, { ...item, quantity: Math.max(1, item.quantity) }]
+        set({ items: next, addNonce: get().addNonce + 1 })
+      },
+      setQuantity: (key, quantity) => {
+        if (quantity < 1) {
+          set({ items: get().items.filter((i) => i.key !== key) })
+          return
+        }
+        set({ items: get().items.map((i) => (i.key === key ? { ...i, quantity } : i)) })
+      },
+      remove: (key) => set({ items: get().items.filter((i) => i.key !== key) }),
+      clear: () => set({ items: [] }),
+    }),
+    {
+      name: 'zita-bag-v1',
+      storage: createJSONStorage(() =>
+        typeof window !== 'undefined' ? window.localStorage : (undefined as unknown as Storage)
+      ),
+      // addNonce is an ephemeral session signal, not persisted.
+      partialize: (state) => ({ items: state.items }),
+    }
+  )
+)
 
-function commit(next: BagItem[]) {
-  cache = next
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-  } catch {
-    // ignore quota / privacy-mode errors
-  }
-  window.dispatchEvent(new Event(CHANGE_EVENT))
-}
-
-function subscribe(callback: () => void) {
-  const onStorage = () => {
-    cache = read()
-    callback()
-  }
-  window.addEventListener(CHANGE_EVENT, callback)
-  window.addEventListener('storage', onStorage)
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, callback)
-    window.removeEventListener('storage', onStorage)
-  }
-}
-
-function getSnapshot(): BagItem[] {
-  ensureInitialized()
-  return cache
-}
-
-function getServerSnapshot(): BagItem[] {
-  return EMPTY
-}
-
-export function addToBag(item: BagItem) {
-  ensureInitialized()
-  const existing = cache.find((i) => i.key === item.key)
-  if (existing) {
-    // Same product + colour + size is one line; a repeat add bumps its count.
-    commit(
-      cache.map((i) => (i.key === item.key ? { ...i, quantity: i.quantity + item.quantity } : i))
-    )
-    return
-  }
-  commit([...cache, { ...item, quantity: Math.max(1, item.quantity) }])
-}
-
-export function setBagQuantity(key: string, quantity: number) {
-  ensureInitialized()
-  if (quantity < 1) {
-    commit(cache.filter((i) => i.key !== key))
-    return
-  }
-  commit(cache.map((i) => (i.key === key ? { ...i, quantity } : i)))
-}
-
-export function removeFromBag(key: string) {
-  ensureInitialized()
-  commit(cache.filter((i) => i.key !== key))
-}
-
-export function clearBag() {
-  commit(EMPTY)
+// persist doesn't sync across tabs; rehydrate when another tab writes the key.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'zita-bag-v1') void useBagStore.persist.rehydrate()
+  })
 }
 
 export function useBag() {
-  const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
-  const hydrated = useSyncExternalStore(subscribe, returnTrue, returnFalse)
+  const items = useBagStore((s) => s.items)
+  const addNonce = useBagStore((s) => s.addNonce)
+  const add = useBagStore((s) => s.add)
+  const setQuantity = useBagStore((s) => s.setQuantity)
+  const remove = useBagStore((s) => s.remove)
+  const clear = useBagStore((s) => s.clear)
+  // Client-only data stays hidden until after mount so SSR output matches.
+  const hydrated = useHydrated()
+
   return {
-    items,
-    count: items.length,
-    add: addToBag,
-    setQuantity: setBagQuantity,
-    remove: removeFromBag,
-    clear: clearBag,
+    items: hydrated ? items : EMPTY,
+    count: hydrated ? items.length : 0,
+    addNonce,
+    add,
+    setQuantity,
+    remove,
+    clear,
     hydrated,
   }
 }
