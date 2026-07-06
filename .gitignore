@@ -49,4 +49,6 @@ skills-lock.json
 scripts/seed-catalog.mjs
 .claude/skills/refactor/SKILL.md
 AGENTS.md
-notes/
+/notes
+
+notes/build-prompts.md

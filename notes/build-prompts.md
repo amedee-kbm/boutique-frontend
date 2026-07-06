@@ -166,24 +166,59 @@ Constraints: mobile-first; smooth touch scrolling; no layout shift; responsive. 
 scrolls and navigates on the real app at 375px.
 ```
 
+> **P5–P7 below are superseded by [`build-prompts-p5-p7.md`](./build-prompts-p5-p7.md)** — refreshed
+> for the post-FSD-refactor codebase (correct `features/storefront/*` + `features/admin/*` paths and
+> current state). Use that file; the three blocks below are kept only for history. P0–P4 are built.
+
 ## P5 — Cart area: Shopping Bag + Favorites tabs
 
 ```
-Zita Boutique (read CLAUDE.md + auto-memory). Depends on P0, P1.
-Read notes/zara-cart-area.jpeg, notes/zara-cart-area-with-item.jpeg, and
+Zita Boutique (Next.js 16 App Router, Supabase, Drizzle, Base UI/shadcn). Read CLAUDE.md
+(especially the "Feature-Sliced Design (src/)" section) and your auto-memory first. Read
+notes/zara-cart-area.jpeg, notes/zara-cart-area-with-item.jpeg, and
 notes/zara-empty-shoping-cart.jpeg before building.
 
-Build the cart area with tabs: SHOPPING BAG |n| · FAVORITES (drop "PRE-OWNED", N/A):
-- Bag tab: line items (thumb · name · size|colour · price · REMOVE), approx TOTAL with the
-  "no payment, seller confirms" note, and a primary CONTINUE that enters the existing no-pay
-  order/checkout (P1). Empty state per zara-empty-shoping-cart.jpeg.
-- Favorites tab: if signed out, "You must log in to view or save items in your favorites list"
-  + LOG IN + REGISTER (zara-cart-area.jpeg). If signed in, list favorited products with a
-  move-to-bag affordance.
-- Optional "You may also like" strip (same-category suggestions).
+P0 (customer auth) and P1 (Bag + Favorites model) are DONE. The codebase has since moved to
+Feature-Sliced Design — build within features/storefront/*, and DO NOT import features/admin/*.
+Current state (use it, don't rebuild it):
+- Bag page: src/app/(storefront)/bag/page.tsx renders <BagHeader/> + <BagList/>.
+- features/storefront/bag — <BagList/> ALREADY implements the whole Bag + no-pay checkout: line
+  items with REMOVE, approx TOTAL + "no payment, seller confirms" note, the order form
+  (name/phone/address/note validated by orderDetailsSchema), prefill from getMyLatestOrderDetails,
+  CONTINUE → placeOrder, and a basic "Your bag is empty" state. Reuse it as the Bag tab as-is
+  (only restyle the empty state toward zara-empty-shoping-cart.jpeg if you want).
+  Barrel exports: BagButton, BagHeader, BagList, useBag, bagKey, addToBag, BagItem.
+- features/storefront/orders/services/place.ts — placeOrder, getMyLatestOrderDetails (no-pay flow).
+- features/storefront/favorites — useFavorites (loads the signed-in customer's favorites and
+  toggles with a { needsAuth } gate), FavoriteButton, FavoritesProvider. There is NO favorites
+  LIST view and NO cart tabs yet — that's what this slice adds.
 
-Constraints: mobile-first → responsive; sticky CONTINUE bar; no payment/tax/checkout total.
-Verify on the real app: bag → continue → order places; favorites gate works guest vs signed-in.
+Build the tabbed cart area — SHOPPING BAG |n| · FAVORITES (drop "PRE-OWNED", N/A):
+- Add a tabs shell (a new features/storefront/bag component, e.g. CartTabs) hosting two panels;
+  update the /bag page to render it. Keep the Bag-count badge on the Bag tab.
+- BAG tab = the existing <BagList/> unchanged.
+- FAVORITES tab:
+  - Signed OUT → the gate copy "You must log in to view or save items in your favorites list" +
+    LOG IN + REGISTER buttons (zara-cart-area.jpeg) linking to /account/login and /account/register.
+  - Signed IN → list the favorited PRODUCTS (thumbnail · name · price) with a move-to-bag
+    affordance and a remove-from-favorites control. useFavorites only tracks product IDs, so add a
+    storefront READ that returns the favorited products' card data: a Drizzle service
+    features/storefront/favorites/services/favorite-queries.ts (e.g. getFavoriteProducts(userId)),
+    filtering products.visible = true. Import it BY PATH from the page (server-only reads are not
+    re-exported from the barrel).
+- Optional "You may also like" strip (same-category suggestions) reusing GridCard from
+  features/storefront/products.
+
+FSD boundary rules (from CLAUDE.md — enforced): all of this is features/storefront/*, never import
+features/admin/*. No @/lib/supabase/client import outside hooks/ and services/ — components render
+hook state; hooks/services own Supabase/DB IO and return { data, error } / { error }. Reads live in
+services/*-queries.ts and filter visible=true; a feature's index.ts barrel must not re-export those
+server-only read modules (export components + 'use server' actions only). `npm run build` is the real
+boundary check.
+
+Constraints: mobile-first 375 → responsive; sticky CONTINUE bar; no payment/tax/checkout total.
+Verify on the REAL app (next dev): bag → CONTINUE → order places; the Favorites tab shows the log-in
+gate as a guest, and the favorited products (with move-to-bag) when signed in.
 ```
 
 ## P6 — Chat: drop the auto-message, preload context
