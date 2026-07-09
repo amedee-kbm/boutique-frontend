@@ -224,7 +224,10 @@ Vitest imports modules directly and never applies the framework's runtime contra
 
 ## Git Conventions
 
-- **Commits are the developer's own** — do not add Claude as co-author
+- **Commits are the developer's responsibility, and AI assistance is disclosed.** Every commit is
+  understood and defended by a human, but where Claude wrote the code, say so — add the
+  `Co-Authored-By: Claude <noreply@anthropic.com>` trailer. `AI_USAGE.md` states this project uses AI
+  openly; the commit history should not quietly say otherwise.
 - Commit message format: `type(scope): short description`
   - Types: `feat`, `fix`, `refactor`, `test`, `chore`, `docs`, `style`
   - Examples:
@@ -233,6 +236,8 @@ Vitest imports modules directly and never applies the framework's runtime contra
     - `fix(admin): prevent image upload without alt text`
 - One logical change per commit — do not bundle unrelated changes
 - Branch naming: `feat/slug`, `fix/slug`, `chore/slug`
+- **Never commit to `main`.** Always ask before committing: show `git status` and draft the message
+  first.
 
 ---
 
