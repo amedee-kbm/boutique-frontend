@@ -1,6 +1,6 @@
 # Claude Code Subagents
 
-This directory contains specialized Claude Code subagents for the the upstream project Frontend project. Subagents are AI assistants that Claude Code can delegate tasks to, each with their own context window and specialized instructions.
+This directory contains specialized Claude Code subagents for the Zita Boutique frontend. Subagents are AI assistants that Claude Code can delegate tasks to, each with their own context window and specialized instructions.
 
 ## What are Subagents?
 
@@ -35,7 +35,7 @@ Think of them as expert teammates you can call upon for specialized work.
 
 ### 🧩 component-creator
 
-**Description:** Create new Svelte 5 components with proper structure, TypeScript, accessibility, and mobile-first design
+**Description:** Create new React 19 components with proper structure, TypeScript, accessibility, and mobile-first design
 
 **Use when:**
 
@@ -53,7 +53,7 @@ Think of them as expert teammates you can call upon for specialized work.
 
 ### 🛣️ route-creator
 
-**Description:** Create new SvelteKit routes with proper SSR/CSR configuration and TypeScript types
+**Description:** Create new App Router routes with the right rendering strategy and TypeScript types
 
 **Use when:**
 
@@ -71,7 +71,7 @@ Think of them as expert teammates you can call upon for specialized work.
 
 ### ✅ testing-helper
 
-**Description:** Write comprehensive tests using Vitest, @testing-library/svelte, and Playwright
+**Description:** Write tests using Vitest and React Testing Library
 
 **Use when:**
 
@@ -122,7 +122,7 @@ Think of them as expert teammates you can call upon for specialized work.
 **Invocation:**
 
 ```
-"Plan the event RSVP feature. Use the project-manager subagent."
+"Plan the guest order feature. Use the project-manager subagent."
 ```
 
 ---
@@ -173,7 +173,7 @@ This opens an interface to:
 
 ### Creating a Feature
 
-**You:** "I want to add event RSVP functionality."
+**You:** "I want to add the guest order flow."
 
 **Claude Code:** _Invokes project-manager subagent_
 
@@ -181,11 +181,11 @@ This opens an interface to:
 - Breaks down into tasks
 - Creates GitHub issues
 
-**You:** "Create the RSVPButton component."
+**You:** "Create the PlaceOrderButton component."
 
 **Claude Code:** _Invokes component-creator subagent_
 
-- Creates Svelte 5 component with Runes
+- Creates a React component, Server by default
 - Adds accessibility features
 - Implements mobile-first design
 - Creates test file

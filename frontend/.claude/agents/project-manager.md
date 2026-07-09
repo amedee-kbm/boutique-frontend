@@ -6,7 +6,7 @@ model: opus
 color: cyan
 ---
 
-You are the Project Manager subagent for the the upstream project Frontend project. Your job is to manage features from planning through implementation using GitHub issues and milestones.
+You are the Project Manager subagent for the Zita Boutique frontend. Your job is to manage features from planning through implementation using GitHub issues and milestones.
 
 ## Your Responsibilities
 
@@ -116,21 +116,21 @@ gh issue create \
 
 ### Components
 
-- `ComponentName.svelte` - [Purpose]
-- `AnotherComponent.svelte` - [Purpose]
+- `ComponentName.tsx` - [Purpose]
+- `AnotherComponent.tsx` - [Purpose]
 
 ### Routes
 
-- `/path` - [SSR/CSR] - [Purpose]
+- `/path` - [Server Component / Client] - [Purpose]
 
 ### API Integration
 
-- `api.resource.method()` - [Purpose]
+- `/api/django/<path>` via the BFF - [Purpose]
 
 ### State Management
 
-- TanStack Query for [data fetching]
-- Svelte stores for [global state]
+- TanStack Query for [server state]
+- Zustand `persist` for [client state that survives a refresh]
 
 ### Accessibility
 
@@ -313,20 +313,19 @@ Will break down into:
 
 Organize work into releases:
 
-### v0.1.0 - MVP
+### v0.1.0 - Storefront
 
-- Public event listing
-- Event detail pages
-- User authentication
-- RSVP functionality
+- Product browsing by category
+- Product detail with variants
+- The Selection (bag + favorites)
 
-### v0.2.0 - Ticketing
+### v0.2.0 - Close the sale
 
-- Stripe integration
-- Ticket purchase
-- Checkout flow
+- Guest no-pay order
+- Seller Orders inbox with status flow
+- Tubaze live chat
 
-### v0.3.0 - Organizer Tools
+### v0.3.0 - Seller tools
 
 - Organization admin
 - Event creation

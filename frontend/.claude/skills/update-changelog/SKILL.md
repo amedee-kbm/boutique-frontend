@@ -1,7 +1,7 @@
 ---
 name: update-changelog
 description: Update CHANGELOG.md comprehensively based on git tags, merged PRs, and actual code diffs. Use when the user asks to "update the changelog", backfill missing versions, prepare a release, or reconcile [Unreleased] entries against shipped tags. Produces Keep-a-Changelog entries that describe user-facing impact, not implementation details.
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(grep:*), Bash(make:*), Bash(pnpm:*), Read, Edit, Grep, Glob
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(grep:*), Bash(make:*), Bash(npm:*), Read, Edit, Grep, Glob
 ---
 
 # Update Changelog
@@ -15,7 +15,7 @@ Maintains `CHANGELOG.md` (Keep a Changelog format, semver) by reconciling it aga
 - Bullets describe **user-facing impact** (what an event organizer, attendee, or admin sees), not internal refactors. Drop pure CI/test/lint/type-fix commits unless they change observable behavior.
 - Major features get a bold prefix: `- **Discount codes**: full admin CRUD…`. Optional nested sub-bullets for sub-features.
 - Bug fixes name the symptom that was fixed, not the patch ("Tier prices no longer get corrupted on save under non-English browser locales").
-- Backticks for code symbols: routes (`/org/[slug]/admin/financials`), component names, prop/flag names (`is_open_ended`, `max_tickets_per_user`), env vars (`PUBLIC_API_URL`).
+- Backticks for code symbols: routes (`/admin/orders`), component names, prop/flag names (`visible`, `featured`), env vars (`DJANGO_API_URL`).
 - Dates are the **tag date** (committer date of the tag), not today's date.
 - A version with no user-facing change still gets a header followed by:
   `_Maintenance release — internal, tooling, or dependency changes only._`
@@ -30,7 +30,7 @@ Maintains `CHANGELOG.md` (Keep a Changelog format, semver) by reconciling it aga
 
 - **Always pass `-c log.showSignature=false` to git** (e.g. `git -c log.showSignature=false log …`). Commits are GPG-signed and signature-verification noise otherwise floods every `git log`/`git show`.
 - **Mixed merge styles.** Early history uses real merge commits; recent history uses **squash merges** with the PR number in the subject (`feat(x): … (#498)`). So gather commits with `--first-parent` on the full commit list — do **not** rely on `--merges` (it misses every squash merge).
-- **API-client noise.** Most feature commits bundle a large regeneration of `src/lib/api/` (`pnpm generate:api` output — `sdk.gen.ts`, `types.gen.ts`, etc.). This is plumbing — drop it unless it surfaces a new user-visible field/flow.
+- **API-client noise.** Most feature commits bundle a large regeneration of `src/lib/api/` (`npm run generate:api` output — `sdk.gen.ts`, `types.gen.ts`, etc.). This is plumbing — drop it unless it surfaces a new user-visible field/flow.
 - **Real version gaps exist** and are expected (e.g. `v1.3.2`, `v1.13.6`, `v1.20.0`, the whole `v1.24.x` line were never tagged). Don't invent sections for them.
 
 ## Workflow
@@ -80,7 +80,7 @@ Verify the user-facing surface:
 
 - New pages / routes → check `src/routes/` (and route groups `(public)`, `(auth)`).
 - New components / flows → check `src/lib/components/`.
-- i18n → check `messages/*.json` / Paraglide sources (new languages, large string migrations).
+- The app has no i18n library (see ADR-0005). There is no translation work to changelog.
 - Settings/flags exposed in UI → check the relevant form components and `src/lib/api/` field additions.
 - Auth/permissions → check `hooks.server.ts`, guards, eligibility logic.
 
@@ -90,7 +90,7 @@ If the diff is purely internal (API-client regen, renames, helper extraction, ty
 
 | Section | Use for |
 |---------|---------|
-| **Added** | New pages/routes, new user-facing components/features, new flows (RSVP, checkout, check-in), new i18n languages, new settings/toggles |
+| **Added** | New pages/routes, new customer- or seller-facing components and flows (guest order, Tubaze chat, favorites) |
 | **Changed** | Behavior/UX changes to existing features, redesigns, copy changes with impact, performance visible to users |
 | **Fixed** | Bug fixes — describe the symptom the user saw |
 | **Deprecated** | Features still working but slated for removal |
@@ -105,7 +105,7 @@ Style examples lifted from this repo's existing entries — match the voice:
 
 ```markdown
 ### Added
-- **Discount codes**: full admin CRUD under org admin — list page with search, status/type filters, and inline enable/disable; create/edit pages; scope assignment across series, events, and tiers.
+- **Merchandising**: the seller edits the home strip — an ordered, visibility-toggled list of links, replaced atomically; create/edit pages; scope assignment across series, events, and tiers.
 - Image cropper modal when uploading a profile picture, letting you crop before saving.
 
 ### Fixed

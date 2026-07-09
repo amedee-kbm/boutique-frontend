@@ -31,7 +31,7 @@ Bump level requested (may be empty): $ARGUMENTS
 
 5. **Cut the branch:** `git checkout -b release/vX.Y.Z` off the up-to-date `main`.
 
-6. **Bump:** `pnpm version --no-git-tag-version <part>` (writes `package.json`; supports
+6. **Bump:** `npm version --no-git-tag-version <part>` (writes `package.json`; supports
    `major`, unlike the `make bump-version`/`bump-minor` targets). This does not create a tag
    or commit. Never hand-edit the version.
 
@@ -39,7 +39,7 @@ Bump level requested (may be empty): $ARGUMENTS
    and insert a fresh empty `## [Unreleased]` above it (preserve the link/section order
    conventions already in the file).
 
-8. **Commit** the bump + changelog together (include `pnpm-lock.yaml` only if it changed):
+8. **Commit** the bump + changelog together (include `package-lock.json` only if it changed):
    `git add package.json CHANGELOG.md && git commit -m "chore(release): vX.Y.Z"`.
 
 9. **Push and open the PR:**

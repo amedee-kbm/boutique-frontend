@@ -37,10 +37,10 @@ are prefixed **Breaking**. Section order: Added, Changed, Fixed, Deprecated, Rem
 
 ### Removed
 
-- Engineering scaffolding inherited from [the upstream project](https://github.com/upstream)'s SvelteKit frontend:
-  their release and publish workflows, funding config, Playwright specs for polls and subscriptions,
-  and one-off translation-migration scripts. What Zita keeps of that methodology is rewritten from
-  intent, not copied (`ADR-0010`).
+- Inherited engineering scaffolding written for a different framework: release and publish
+  workflows, funding config, end-to-end specs for features this app does not have, and one-off
+  translation-migration scripts. What Zita keeps of that methodology is rewritten from intent, not
+  copied (`ADR-0010`).
 
 ### Notes
 

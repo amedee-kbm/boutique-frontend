@@ -8,8 +8,8 @@
  * bug in the theme, not in the component that used it correctly.
  *
  * Tokens are `oklch(L C H)`. Getting a contrast ratio out of that means going
- * oklch -> oklab -> linear sRGB -> sRGB -> relative luminance. the upstream project's version
- * of this script parsed HSL and would have produced silent nonsense here.
+ * oklch -> oklab -> linear sRGB -> sRGB -> relative luminance. The script this
+ * replaces parsed HSL, and would have found zero tokens and passed.
  *
  * Colour-blind separation is deliberately not checked yet: the palette is
  * currently near-achromatic (`--primary` is chroma 0), so there are no hues to
