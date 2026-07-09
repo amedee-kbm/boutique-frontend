@@ -1,3 +1,7 @@
+# Prompts for a model, not source. Line breaks in them are semantic — Prettier's
+# reflow would rewrite instructions, not format them.
+.claude/
+
 # Generated or vendored — nobody reads these, and reformatting them creates
 # diffs that hide real ones.
 node_modules/
