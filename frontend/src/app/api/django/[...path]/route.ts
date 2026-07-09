@@ -12,7 +12,7 @@ async function forward(
   request: NextRequest,
   path: string[],
   token: string | null,
-  body: string | undefined,
+  body: string | undefined
 ) {
   const url = `${env.DJANGO_API_URL}/${path.join('/')}${request.nextUrl.search}`
 
@@ -48,10 +48,4 @@ async function handle(request: NextRequest, ctx: { params: Promise<{ path: strin
   })
 }
 
-export {
-  handle as GET,
-  handle as POST,
-  handle as PUT,
-  handle as PATCH,
-  handle as DELETE,
-}
+export { handle as GET, handle as POST, handle as PUT, handle as PATCH, handle as DELETE }

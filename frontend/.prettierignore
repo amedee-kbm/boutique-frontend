@@ -1,0 +1,9 @@
+# Generated or vendored — nobody reads these, and reformatting them creates
+# diffs that hide real ones.
+node_modules/
+.next/
+out/
+coverage/
+package-lock.json
+next-env.d.ts
+supabase/migrations/
