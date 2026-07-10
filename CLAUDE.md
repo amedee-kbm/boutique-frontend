@@ -66,7 +66,7 @@ Zita Boutique is a mobile-first fashion ecommerce storefront. The store sells af
 | File / image storage       | Supabase Storage                           |
 | Pre-commit hooks           | husky + lint-staged                        |
 | Unit / Integration tests   | Vitest + React Testing Library             |
-| E2E tests                  | Playwright                                 |
+| E2E tests                  | none yet — see Testing Approach            |
 | Deployment                 | Vercel                                     |
 
 ---
@@ -279,7 +279,7 @@ Vitest imports modules directly and never applies the framework's runtime contra
 ## Project Structure
 
 ```
-frontend/
+boutique-frontend/
 ├── src/
 │   ├── app/                 # Next routes (thin; render features/widgets)
 │   │   ├── (storefront)/    # Public: home feed, category, product, bag, chat, account
