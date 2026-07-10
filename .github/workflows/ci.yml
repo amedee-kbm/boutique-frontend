@@ -22,7 +22,7 @@ jobs:
     name: make check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
@@ -59,7 +59,7 @@ jobs:
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: build-only
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
