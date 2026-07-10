@@ -52,11 +52,13 @@ jobs:
       # build renders no dynamic page, and the admin segment is forced dynamic.
       DATABASE_URL: postgresql://build:build@localhost:5432/build
       SUPABASE_SERVICE_ROLE_KEY: build-only
-      VAPID_PRIVATE_KEY: build-only
-      VAPID_SUBJECT: mailto:build@example.com
       NEXT_PUBLIC_SUPABASE_URL: https://build.example.com
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only
-      NEXT_PUBLIC_VAPID_PUBLIC_KEY: build-only
+      VAPID_SUBJECT: mailto:build@example.com
+      # The VAPID keypair is generated per run, below. web-push validates it
+      # at import, so a placeholder fails the build — and a real key does not
+      # belong in a repository, throwaway or not. "Throwaway" is a claim a
+      # secret scanner cannot verify, and it is right not to try.
 
     steps:
       - uses: actions/checkout@v5
@@ -67,6 +69,16 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Generate a throwaway VAPID keypair
+        run: |
+          set -euo pipefail
+          keys=$(npx web-push generate-vapid-keys --json)
+          public=$(echo "$keys" | jq -r .publicKey)
+          private=$(echo "$keys" | jq -r .privateKey)
+          echo "::add-mask::$private"
+          echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$public" >> "$GITHUB_ENV"
+          echo "VAPID_PRIVATE_KEY=$private" >> "$GITHUB_ENV"
 
       # This is the real check for server/client boundary violations. It
       # collects page data and fails on a breach — a `"use server"` file
