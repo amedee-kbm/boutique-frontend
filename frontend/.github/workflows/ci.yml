@@ -1,0 +1,78 @@
+# The Makefile is the contract. This workflow runs it, and nothing else.
+#
+# No path filter: this is a required status check, and a required check that
+# never reports leaves a pull request stuck on "Expected — Waiting for status".
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: make check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` installs from package-lock.json and fails if the lockfile and
+      # package.json disagree, rather than quietly resolving something else.
+      - run: npm ci
+
+      # prettier, eslint, tsc --noEmit, file-length, rsc-token, image-alt,
+      # theme-contrast. The rsc-token gate is the one that matters: it is the
+      # only thing standing between the access token and the Flight payload.
+      - name: Quality gate
+        run: make check
+
+      - name: Unit suite
+        run: make test
+
+  build:
+    name: production build
+    runs-on: ubuntu-latest
+
+    env:
+      # The build validates env at collect time via @t3-oss/env-nextjs, so these
+      # must be present and well-shaped. None of them reach a real service: the
+      # build renders no dynamic page, and the admin segment is forced dynamic.
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
+      SUPABASE_SERVICE_ROLE_KEY: build-only
+      VAPID_PRIVATE_KEY: build-only
+      VAPID_SUBJECT: mailto:build@example.com
+      NEXT_PUBLIC_SUPABASE_URL: https://build.example.com
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-only
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: build-only
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # This is the real check for server/client boundary violations. It
+      # collects page data and fails on a breach — a `"use server"` file
+      # exporting a non-function, a server-only module reached from a client
+      # component. No unit test catches either.
+      - run: npm run build
+
+      - name: Assert the build emitted something
+        run: test -d .next

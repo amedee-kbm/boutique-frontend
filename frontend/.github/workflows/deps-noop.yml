@@ -1,0 +1,54 @@
+# No-op twin of deps.yml. GitHub's documented pattern for path-filtered required
+# checks ("Handling skipped but required checks").
+#
+# The problem it solves: `licences` and `vulnerabilities` are required status
+# checks on main, but deps.yml only runs when the dependency graph changed. A
+# required check that never reports does not resolve — it sits at
+# "Expected — Waiting for status" and the pull request can never merge.
+#
+# So this fires on the exact complement of deps.yml's `paths:` and reports
+# instantly-passing jobs under the same names.
+#
+# INVARIANT: the `paths-ignore:` list below must stay the exact complement of
+# the `paths:` list in deps.yml, and the workflow `name:` and both job ids must
+# match it verbatim. Drift either double-runs the real checks (harmless) or
+# leaves pull requests permanently blocked (not harmless).
+#
+# The backend repository gates this with `make workflow-check`. This repository
+# does not yet — the same invariant, unenforced. If you change deps.yml's paths,
+# change these to match, in the same commit.
+
+name: Dependency checks
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - package.json
+      - package-lock.json
+      - Makefile
+      - .github/workflows/deps.yml
+      - .github/workflows/deps-noop.yml
+  pull_request:
+    paths-ignore:
+      - package.json
+      - package-lock.json
+      - Makefile
+      - .github/workflows/deps.yml
+      - .github/workflows/deps-noop.yml
+
+permissions:
+  contents: read
+
+jobs:
+  licences:
+    name: licences
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dependency graph unchanged — nothing to check."
+
+  vulnerabilities:
+    name: vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dependency graph unchanged — nothing to check."

@@ -1,0 +1,32 @@
+# gitleaks configuration.
+#
+# The interesting case here is Supabase's publishable key. It is high-entropy,
+# it is named `..._KEY`, and it is *meant* to reach the browser — Row Level
+# Security, not secrecy, is what protects the data behind it. A scanner that
+# flags it every run is a scanner people learn to ignore.
+#
+# The service-role key is the opposite: same shape, and it bypasses RLS entirely.
+# It must never appear outside a server-only module. `check-rsc-token.mjs` is
+# what stops a credential-shaped `NEXT_PUBLIC_*` variable existing at all.
+
+title = "Zita Boutique frontend"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Paths and values that look like secrets and are not"
+
+paths = [
+  # Integrity hashes, high-entropy by design.
+  '''package-lock\.json$''',
+
+  # Placeholder values only.
+  '''\.env\.example$''',
+]
+
+regexes = [
+  # The build-time placeholders in .github/workflows/ci.yml. The build validates
+  # the *shape* of the environment; none of these reach a real service.
+  '''build-only''',
+]

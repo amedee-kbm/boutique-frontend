@@ -1,0 +1,63 @@
+# Supply-chain gates. Only worth running when the dependency graph moved, so
+# this is path-filtered — which is exactly what makes deps-noop.yml necessary.
+#
+# INVARIANT: the `paths:` list below and the `paths-ignore:` list in
+# deps-noop.yml must remain exact complements, and the workflow `name:` and job
+# ids must match that file verbatim. See deps-noop.yml for why.
+
+name: Dependency checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - package-lock.json
+      - Makefile
+      - .github/workflows/deps.yml
+      - .github/workflows/deps-noop.yml
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+      - Makefile
+      - .github/workflows/deps.yml
+      - .github/workflows/deps-noop.yml
+
+concurrency:
+  group: deps-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  licences:
+    name: licences
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Walks node_modules and reads each manifest. SPDX is evaluated properly:
+      # "MIT OR GPL-3.0" is allowed, "MIT AND GPL-3.0" is not.
+      - run: make licensecheck
+
+  vulnerabilities:
+    name: vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Production dependencies only, high and above. A dev-only advisory does
+      # not ship to a customer, and gating on it trains people to ignore the gate.
+      - run: make audit

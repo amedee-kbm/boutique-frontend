@@ -1,0 +1,43 @@
+version: 2
+
+updates:
+  # npm, not pnpm (ADR-0007). Grouped so that a week of patch bumps is one pull
+  # request rather than fifteen, because fifteen get merged without reading.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # A freshly published version is the most likely to be a compromised one.
+    # Waiting a week costs nothing and defeats the whole class of attack where a
+    # maintainer account is taken over and a malicious patch release cut. This is
+    # the one thing we lost by staying on npm; Dependabot gives it back.
+    cooldown:
+      default-days: 7
+    groups:
+      npm-patch:
+        patterns: ['*']
+        update-types: ['patch']
+      npm-minor:
+        patterns: ['*']
+        update-types: ['minor']
+    ignore:
+      # Next and React majors are a deliberate, scheduled migration — this app is
+      # already on a Next that broke webpack config, `middleware.ts`, and the
+      # synchronous request APIs. Never a Dependabot pull request.
+      - dependency-name: next
+        update-types: ['version-update:semver-major']
+      - dependency-name: react
+        update-types: ['version-update:semver-major']
+      - dependency-name: react-dom
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']
