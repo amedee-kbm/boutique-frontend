@@ -29,4 +29,12 @@ regexes = [
   # The build-time placeholders in .github/workflows/ci.yml. The build validates
   # the *shape* of the environment; none of these reach a real service.
   '''build-only''',
+
+  # Test-fixture passwords from backend/src/conftest.py. That file no longer
+  # exists here — the backend was split out — but it is still in this
+  # repository's history, and gitleaks scans commits, not the checkout. They are
+  # long and odd on purpose, which is why the entropy rule reads them as
+  # credentials. Allowlisted by value, never by path.
+  '''correct-horse-battery-staple-42''',
+  '''another-quite-long-password-77''',
 ]
